@@ -1,11 +1,11 @@
 {
   "folders": [
     {
-      "name": "📄 文档 (SpaceShip)",
+      "name": "📄 文档库",
       "path": "."
     },
     {
-      "name": "🎮 Unity (Spaceship)",
+      "name": "🎮 程序项目",
       "path": "d:\\Unity\\Spaceship"
     }
   ],
