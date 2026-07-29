@@ -1,0 +1,21 @@
+{
+  "folders": [
+    {
+      "name": "📄 文档 (SpaceShip)",
+      "path": "."
+    },
+    {
+      "name": "🎮 Unity (Spaceship)",
+      "path": "d:\\Unity\\Spaceship"
+    }
+  ],
+  "settings": {
+    "editor.wordWrap": "on",
+    "files.autoSave": "afterDelay",
+    "files.autoSaveDelay": 3000,
+    "git.repositoryScanMaxDepth": 2
+  },
+  "extensions": {
+    "recommendations": []
+  }
+}
