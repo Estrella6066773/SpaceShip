@@ -1,0 +1,36 @@
+---
+description: 使用 py、PowerShell 或 cmd 执行命令前，先做好中文输出适配（如设置代码页 65001），避免中文乱码
+alwaysApply: true
+---
+
+# 终端中文适配
+
+在 Windows 下使用 `py`（Python）、PowerShell 或 CMD 执行命令时，中文输出可能乱码。执行前需先做好中文适配。
+
+## 设置代码页 65001（UTF-8）
+
+- CMD：先执行 `chcp 65001`
+- PowerShell：先执行 `chcp 65001`，或设置 `[Console]::OutputEncoding = [System.Text.Encoding]::UTF8`
+- Python：先执行 `chcp 65001`，或设置环境变量 `PYTHONUTF8=1`
+
+## 示例
+
+在 CMD 中：
+
+```cmd
+chcp 65001
+py script.py
+```
+
+在 PowerShell 中：
+
+```powershell
+chcp 65001
+$env:PYTHONUTF8 = "1"
+py script.py
+```
+
+## 注意事项
+
+- 可在同一条命令中先设置代码页再执行目标命令，例如：`chcp 65001 && py script.py`
+- 若命令输出包含中文且被重定向或解析，务必先确认代码页为 65001，否则可能出现编码错误。

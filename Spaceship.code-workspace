@@ -14,7 +14,13 @@
     "files.autoSave": "afterDelay",
     "files.autoSaveDelay": 3000,
     "git.repositoryScanMaxDepth": 2,
-    "dotrush.roslyn.projectOrSolutionFiles": []
+    "dotrush.roslyn.projectOrSolutionFiles": [
+      "d:\\Unity\\Spaceship\\Spaceship.sln",
+      "d:\\Unity\\Spaceship\\Spaceship.slnx",
+      "d:\\Unity\\Spaceship\\Assembly-CSharp-Editor.csproj",
+      "d:\\Unity\\Spaceship\\Assembly-CSharp.csproj",
+      "d:\\Unity\\Spaceship\\Unity.UOS.Encrypt.csproj"
+    ]
   },
   "extensions": {
     "recommendations": []
