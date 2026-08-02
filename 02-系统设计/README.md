@@ -109,8 +109,8 @@
 
 ## 已有参考文档（工程内）
 
-- `Assets/Kaki/Documentation/SpaceshipPrototype.md` — 初版系统清单、已实现功能与操作方式
-- `Assets/Kaki/Documentation/GameFlowImplementation.md` — 游戏流程实现详述
-- `Assets/Kaki/Documentation/ConfigurableTestScene.md` — 可配置测试场景说明
-- `Assets/Kaki/Documentation/AssemblyPlaytestValidation.md` — 拼装玩法测试验证
-- `Assets/Kaki/Documentation/Execute/手工场景装配重构-2026-07-28.md` — 场景装配重构方案
+- `Assets/Documentation/SpaceshipPrototype.md` — 初版系统清单、已实现功能与操作方式
+- `Assets/Documentation/GameFlowImplementation.md` — 游戏流程实现详述
+- `Assets/Documentation/ConfigurableTestScene.md` — 可配置测试场景说明
+- `Assets/Documentation/AssemblyPlaytestValidation.md` — 拼装玩法测试验证
+- `Assets/Documentation/Execute/手工场景装配重构-2026-07-28.md` — 场景装配重构方案

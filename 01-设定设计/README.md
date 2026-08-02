@@ -20,8 +20,8 @@
 
 工程代码库中以下文档可作为本板块的起点资料：
 
-- `Assets/Kaki/Documentation/SpaceshipPrototype.md` — 当前版本设定摘要
-- `Assets/wuqiwusheng/SpaceshipVisionPolygonRegionUsage.md` — 视野/照明系统说明（可辅助环境氛围设定）
+- `Assets/Documentation/SpaceshipPrototype.md` — 当前版本设定摘要
+- `Assets/Documentation/SpaceshipVisionPolygonRegionUsage.md` — 视野/照明系统说明（可辅助环境氛围设定）
 
 ---
 

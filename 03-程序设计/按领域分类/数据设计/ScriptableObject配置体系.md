@@ -230,7 +230,7 @@ foreach (var placement in playerBlueprint.ModulePlacements)
 
 - `SpaceshipConfigurationEditors`：中文 SO Inspector 基类（`ChineseScriptableObjectEditor`）
 - `ModuleDefinitionEditor`：自定义 Inspector
-- 菜单 `Kaki/飞船/生成配置与模块预制体`（`SpaceshipConfiguredTestAssetBuilder`）批量构建测试资产
+- 菜单 `Spaceship/飞船/生成配置与模块预制体`（`SpaceshipConfiguredTestAssetBuilder`）批量构建测试资产
 - `ShipWorkshopAssetExporter`：保存/更新蓝图 SO 并导出完整飞船 Prefab
 
 ---
