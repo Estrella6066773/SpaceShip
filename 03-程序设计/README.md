@@ -21,7 +21,7 @@
 | 目录 | 对应工程路径 | 主要功能范围 | 已有文档 |
 |------|-------------|-------------|----------|
 | [Kaki](./按归属管理/Kaki/) | `Assets/Kaki/` | 核心框架、飞船拼装、战斗、UI、数据配置、音频框架、特效框架 | [📄 系统总览](./按归属管理/Kaki/系统总览.md) |
-| [wuqiwusheng](./按归属管理/wuqiwusheng/) | `Assets/wuqiwusheng/` | 敌舰 AI 行为树、视野/战争迷雾渲染、可视化序列图编辑器 | [📄 系统总览](./按归属管理/wuqiwusheng/系统总览.md) |
+| [wuqiwusheng](./按归属管理/wuqiwusheng/) | `Assets/wuqiwusheng/` | 敌舰 AI 状态机、视野/战争迷雾渲染、可视化序列图编辑器 | [📄 系统总览](./按归属管理/wuqiwusheng/系统总览.md) |
 | [Mailk](./按归属管理/Mailk/) ✅ 已归档 | `Assets/Mailk/` | 独立原型（物理验证，不参与主系统迭代） | [📄 系统总览](./按归属管理/Mailk/系统总览.md) |
 
 ---

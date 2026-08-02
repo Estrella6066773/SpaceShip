@@ -1,6 +1,6 @@
 # ScriptableObject 配置体系
 
-> 作者：代码分析生成 | 创建日期：2026-07-29 | 最后修改：2026-07-29
+> 作者：代码分析生成 | 创建日期：2026-07-29 | 最后修改：2026-08-02
 
 本文档描述 Spaceship 项目的 ScriptableObject 数据驱动配置体系。
 
@@ -14,9 +14,10 @@
 SpaceshipGameConfiguration (顶层)
 ├── SpaceshipWorldRules        # 世界规则
 ├── PlayerShipSettings         # 玩家飞船行为
-├── ShipBlueprint[]            # 飞船蓝图（玩家/敌人/残骸）
 ├── SpaceshipPresentationConfig # 表现配置（字体/语言）
-└── ShipWorkshopLibrary        # 工坊资料库
+├── ShipBlueprint[]            # 飞船蓝图（玩家/敌人）
+├── 初始物资配置               # 开局的货物
+└── 随机残骸组数               # 世界生成参数
 ```
 
 ### 配置层次
@@ -24,9 +25,9 @@ SpaceshipGameConfiguration (顶层)
 | 层次 | 资产类型 | 实例数 | 编辑器可见 |
 |------|----------|--------|-----------|
 | 顶层组合 | `SpaceshipGameConfiguration` | 1 个 | 是（Inspector 完整可见） |
-| 子配置 | `SpaceshipWorldRules` 等 | 5 个 | 是 |
+| 子配置 | `SpaceshipWorldRules` 等 | 4 个 | 是 |
 | 蓝图定义 | `ShipBlueprint` | 5 个 | 是 |
-| 模块定义 | `ModuleDefinition` | 8 个 | 是 |
+| 模块定义 | `ModuleDefinition` | 9 个 | 是 |
 | 货物定义 | `CargoItemDefinition` | 多个 | 是 |
 
 ---
@@ -37,16 +38,16 @@ SpaceshipGameConfiguration (顶层)
 
 | 资产 | 路径 | 职责 |
 |------|------|------|
-| `飞船游戏总配置` | `Data/ScriptableObjects/Spaceship/Configs/` | 组合所有子配置为一体 |
+| `飞船游戏总配置` | `Data/ScriptableObjects/Spaceship/Configs/` | 组合所有子配置为一体，含 `IsValid` 全链校验 |
 
 ### 子配置
 
 | 资产 | 路径 | 核心参数 |
 |------|------|----------|
-| `飞船世界规则` | 同上 | 地图尺寸、日夜周期、物理参数、视野/雷达/小行星/碰撞 |
-| `玩家飞船行为配置` | 同上 | 速度、加速度、旋转速度、超载惩罚系数 |
+| `飞船世界规则` | 同上 | 地图尺寸、日循环（含 `FoodPerDay`）、默认移动规则、视野/雷达、小行星、碰撞与残骸 |
+| `玩家飞船行为配置` | 同上 | 移动、链接（锚点碰撞盒/链接/拆除时长）、反馈、钩爪半角、相机跟随 |
 | `飞船表现配置` | 同上 | 中文字体、界面语言、显示配置 |
-| `飞船工坊资料库` | 同上 | 工坊可用模块列表 |
+| `飞船工坊资料库` | 同上 | 世界规则 + 玩家配置 + 表现配置 + 已保存蓝图列表 |
 
 ### 飞船蓝图
 
@@ -85,7 +86,7 @@ public class ModuleDefinition : ScriptableObject
     public float mass;                // 质量（影响飞船总质量与质心）
     public float maxHealth;           // 最大生命值
     public GameObject prefabReference;// 对应 Prefab 引用
-    public Sprite[] damageSprites;    // 四档损坏精灵图
+    public float thrusterSpeed;       // 动力模块推进速度（= Max(forwardSpeedBonus, turnSpeedBonus)）
     public ModuleFunctionConfig[] functions; // 功能配置
     // ...
 }
@@ -114,6 +115,15 @@ public class ModuleDefinition : ScriptableObject
 | `Back` | 后方 | (0, -1) |
 | `Left` | 左侧 | (-1, 0) |
 
+### ShipFaction 枚举
+
+| 值 | 含义 |
+|----|------|
+| `Derelict` | 残骸 |
+| `Player` | 玩家 |
+| `Enemy` | 敌人 |
+| `Neutral` | 中立 |
+
 ---
 
 ## ShipBlueprint 数据结构
@@ -125,6 +135,7 @@ public class ShipBlueprint : ScriptableObject
     public ShipFaction faction;                      // 阵营
     public ShipModulePlacement[] modulePlacements;   // 模块布局
     public ShipInitialCargoPlacement[] initialCargo; // 初始货物
+    public GameObject exportedPrefab;                // 导出预制体引用
 }
 ```
 
@@ -135,7 +146,7 @@ public class ShipBlueprint : ScriptableObject
 | `moduleDefinition` | `ModuleDefinition` | 模块定义引用 |
 | `gridX` | `int` | 网格 X 坐标 |
 | `gridY` | `int` | 网格 Y 坐标 |
-| `localDirection` | `LocalDirection` | 朝向 |
+| `quarterTurns` | `int` | 四分之一圈旋转 |
 
 ### ShipInitialCargoPlacement
 
@@ -145,6 +156,8 @@ public class ShipBlueprint : ScriptableObject
 | `count` | `int` | 初始数量 |
 | `targetStorageIndex` | `int` | 目标储存模块索引 |
 
+蓝图提供 `IsValid` / `ValidateInitialCargo` / `IsLayoutConnected` 静态校验。
+
 ---
 
 ## SpaceshipWorldRules 数据结构
@@ -152,12 +165,28 @@ public class ShipBlueprint : ScriptableObject
 | 参数分类 | 参数 | 说明 |
 |----------|------|------|
 | **地图** | `mapWidth`、`mapHeight` | 500m × 500m |
-| **时间** | `dayDurationSeconds` | 默认 300 秒（5 分钟） |
-| **物理** | `globalThrustMultiplier`、`dragCoefficient`、`angularDamping` | 移动物理参数 |
-| **视野** | `baseVisionRadius`、`lightAngle`、`lightRange` | 20m/60°/80m |
+| **日循环** | `dayDurationSeconds` | 日时长（可配置） |
+| **日消耗** | `foodPerDay` | 每日食物消耗（默认 5） |
+| **默认移动** | 基础速度/阻力/角阻尼 | 敌舰等非玩家船使用的移动参数 |
+| **视野** | `baseVisionRadius`、`lightAngle`、`lightRange` | 视野范围/60°/80m |
 | **雷达** | `radarRange`、`radarExpiryTime` | 100m 扫描 |
 | **小行星** | `asteroidCountMin`、`asteroidCountMax`、`asteroidSizeMin`、`asteroidSizeMax` | 20-30 个 / 2-8m |
-| **碰撞** | `collisionDamageMultiplier` | 碰撞伤害系数 |
+| **碰撞与残骸** | `collisionDamageMultiplier`、弹/摩擦/阻尼/震屏阈值 | 碰撞伤害系数与残骸参数 |
+
+---
+
+## CargoItemDefinition 与货物枚举
+
+### 货物分类体系（新）
+
+| 枚举 | 值 |
+|------|-----|
+| `CargoCategory` | Food / Fuel / Ammunition / Treasure |
+| `CargoRarity` | Common / Rare / Epic |
+| `AmmunitionType` | General |
+| `CargoIdentificationState` | Unidentified / Identified |
+
+`CargoCategory` 为新主枚举；`CargoType`（Food/Fuel/Ammunition/Treasure）保留为旧版兼容枚举，通过 `CargoCategoryCompatibility`（`ToCategory`/`ToLegacyType`）双向转换。
 
 ---
 
@@ -178,7 +207,8 @@ public class ShipBlueprint : ScriptableObject
 
 ```csharp
 // 通过 SpaceshipGameManager 访问总配置
-var config = SpaceshipGameManager.Instance.Configuration;
+var manager = GetComponent<SpaceshipGameManager>();
+var config = manager.Configuration;
 
 // 读取世界规则
 var worldRules = config.WorldRules;
@@ -192,15 +222,16 @@ foreach (var placement in playerBlueprint.ModulePlacements)
 }
 ```
 
-配置数据在**场景加载时一次性读取**，运行时不再修改 SO 资产。
+配置数据在**场景加载时一次性读取**，运行时不再修改 SO 资产。`SpaceshipGameManager` 提供 `TryGetConfiguration` 带有效性校验。
 
 ---
 
 ## 编辑器支持
 
-- `ChineseScriptableObjectEditor` 基类（`SpaceshipConfigurationEditors.cs`）
-- `ModuleDefinitionEditor` 自定义 Inspector
-- 通过菜单 `Kaki/飞船/Build Configured Test Assets And Scene` 批量构建测试资产
+- `SpaceshipConfigurationEditors`：中文 SO Inspector 基类（`ChineseScriptableObjectEditor`）
+- `ModuleDefinitionEditor`：自定义 Inspector
+- 菜单 `Kaki/飞船/生成配置与模块预制体`（`SpaceshipConfiguredTestAssetBuilder`）批量构建测试资产
+- `ShipWorkshopAssetExporter`：保存/更新蓝图 SO 并导出完整飞船 Prefab
 
 ---
 
