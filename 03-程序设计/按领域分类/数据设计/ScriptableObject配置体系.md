@@ -15,8 +15,7 @@ SpaceshipGameConfiguration (顶层)
 ├── SpaceshipWorldRules        # 世界规则
 ├── PlayerShipSettings         # 玩家飞船行为
 ├── SpaceshipPresentationConfig # 表现配置（字体/语言）
-├── ShipBlueprint[]            # 飞船蓝图（玩家/敌人）
-├── 初始物资配置               # 开局的货物
+├── ShipBlueprint[]            # 飞船蓝图（玩家/敌人，内嵌初始货物与模块布局）
 └── 随机残骸组数               # 世界生成参数
 ```
 
