@@ -1,5 +1,5 @@
 ---
-description: 双开 Unity 编辑器实例 ss（SpaceShip）与 ss0（SpaceShip0）运行在经常变化的分支上；使用 Unity MCP / uvcs 或编辑 C# 前先确认目标实例与当前分支
+description: 双开 Unity 编辑器实例 ss（SpaceShip）与 ss0（SpaceShip0）任务相互独立；除非用户主动提出，绝不同时编辑两个工作区
 globs: **/*.cs
 alwaysApply: false
 ---
@@ -14,6 +14,12 @@ alwaysApply: false
 | ss0 | `SpaceShip0` | `D:/Unity/Spaceship_0` | `Spaceship_0@aac47a755d327713` |
 
 > Unity MCP 实例 id（hash）随连接会话变化，使用前以 `mcpforunity://instances` 实际查询结果为准。
+
+## 两个工作区的任务相互独立（最高优先级）
+
+- 一次任务只针对一个工作区（ss 或 ss0），**除非用户明确说「两个都要改」这类指令，绝不同时编辑两个工作区**；
+- 看到 ss 和 ss0 的相似内容时，不要顺手把改动同步/复制到另一个工作区；
+- 用户不提，就只动当前任务所属的那个工作区，另一个保持原样。
 
 ## 分支是动态的
 
@@ -31,7 +37,7 @@ alwaysApply: false
 ## 使用 uvcs（版本控制 MCP）时
 
 - uvcs 以 fleet 模式管理两个工作区，**每个工具调用都必须显式传 `workspace` 选择器**，取值为 `ss` 或 `ss0`；
-- 读操作前先查 `uvcs_branch_info`（分别对 `ss` 和 `ss0` 各查一次），确认目标工作区当前分支；
+- 读操作前先查 `uvcs_branch_info`（只查本次任务所属的那个工作区），确认目标工作区当前分支；
 - 缺省选择器或选错工程会造成误读/误操作，调用前先确认目标工作区；
 - ss 与 ss0 共享仓库 `Spaceship@tj_...`，但各自分支/待提交内容独立，操作时注意区分；
 - manifest 文件：`D:\OneDrive\MyProjects\SpaceShip\.cursor\uvcs-workspaces.json`。
@@ -43,6 +49,7 @@ alwaysApply: false
 
 ## 禁止的行为
 
+- **未经用户明确要求，同时修改或同步 ss 与 ss0 两个工作区；**
 - 不做实例/分支确认就直接调用 Unity MCP / uvcs 工具；
 - 假设两个实例的代码、场景、资源完全一致；
 - 假设 ss 或 ss0 固定在某分支、沿用上次记住的分支；
