@@ -1,0 +1,49 @@
+---
+description: 双开 Unity 编辑器实例 ss（SpaceShip）与 ss0（SpaceShip0）运行在经常变化的分支上；使用 Unity MCP / uvcs 或编辑 C# 前先确认目标实例与当前分支
+globs: **/*.cs
+alwaysApply: false
+---
+
+# 双开 Unity 实例（ss / ss0）
+
+当前有两个同时打开的 Unity 编辑器实例，运行在不同分支上，代码、场景、资源状态可能不一致。
+
+| 代号 | Unity 实例名 | 工程目录 | Unity MCP 实例 id（随会话变化，以实际查询为准） |
+| ---- | ---- | ---- | ---- |
+| ss  | `SpaceShip`  | `D:/Unity/Spaceship` | `Spaceship@cbe0c884b99351bb` |
+| ss0 | `SpaceShip0` | `D:/Unity/Spaceship_0` | `Spaceship_0@aac47a755d327713` |
+
+> Unity MCP 实例 id（hash）随连接会话变化，使用前以 `mcpforunity://instances` 实际查询结果为准。
+
+## 分支是动态的
+
+- 两个实例当前所在分支**经常变化**，取决于正在进行什么工作；不要假设 ss 或 ss0 固定停留在某个分支；
+- 每次操作前都通过 uvcs 查询各自当前分支，以查询结果为准；
+- 分支名不写入文档、不做长期记忆；切换分支后之前记住的分支信息立即作废。
+
+## 使用 Unity MCP 时
+
+- 调用涉及实例的工具前，先确认目标实例是哪个，禁止默认或盲猜。
+- 查询 `mcpforunity://instances` 获取当前已连接实例列表；
+- 用 `set_active_instance` 固定会话目标，或每次调用时传入 `unity_instance` 参数；
+- 多实例未固定目标时工具会报错，应显式指定，而不是反复重试。
+
+## 使用 uvcs（版本控制 MCP）时
+
+- uvcs 以 fleet 模式管理两个工作区，**每个工具调用都必须显式传 `workspace` 选择器**，取值为 `ss` 或 `ss0`；
+- 读操作前先查 `uvcs_branch_info`（分别对 `ss` 和 `ss0` 各查一次），确认目标工作区当前分支；
+- 缺省选择器或选错工程会造成误读/误操作，调用前先确认目标工作区；
+- ss 与 ss0 共享仓库 `Spaceship@tj_...`，但各自分支/待提交内容独立，操作时注意区分；
+- manifest 文件：`D:\OneDrive\MyProjects\SpaceShip\.cursor\uvcs-workspaces.json`。
+
+## 编辑 C# 脚本时
+
+- `Assets/Scripts/` 下的代码分属不同的动态分支，改动前先查询该工程当前分支，确认该代码属于 ss 还是 ss0；
+- 不要用另一个实例的状态或代码来判断当前分支的内容。
+
+## 禁止的行为
+
+- 不做实例/分支确认就直接调用 Unity MCP / uvcs 工具；
+- 假设两个实例的代码、场景、资源完全一致；
+- 假设 ss 或 ss0 固定在某分支、沿用上次记住的分支；
+- uvcs 调用不传 `workspace` 选择器。

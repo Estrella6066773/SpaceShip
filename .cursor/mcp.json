@@ -7,14 +7,7 @@
         "@proanima/uvcs-mcp@1.2.1"
       ],
       "env": {
-        "UVCS_WORKSPACE": "D:\\Unity\\Spaceship",
-        "UVCS_WORKSPACE_NAME": "uvcs",
-        "UVCS_SAFETY_PROFILE": "guarded",
-        "UVCS_MCP_MODE": "standard",
-        "UVCS_ALLOWED_WORKSPACES": "D:\\Unity\\Spaceship",
-        "UVCS_ALLOWED_REPOS": "Spaceship@tj_ddd40345_1a25_4581_86b6_0bda5b88a0f4;Spaceship@tj_ddd40345_1a25_4581_86b6_0bda5b88a0f4@cloud.cn",
-        "UVCS_CHECKIN_MAX_FILES": "20",
-        "UVCS_TOKEN_TTL_SEC": "120"
+        "UVCS_FLEET_MANIFEST": "D:\\OneDrive\\MyProjects\\SpaceShip\\.cursor\\uvcs-workspaces.json"
       }
     }
   }

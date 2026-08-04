@@ -7,6 +7,10 @@
     {
       "name": "🎮 程序",
       "path": "d:\\Unity\\Spaceship"
+    },
+    {
+      "name": "🎮 程序 ss0",
+      "path": "d:\\Unity\\Spaceship_0"
     }
   ],
   "settings": {
@@ -19,7 +23,12 @@
       "d:\\Unity\\Spaceship\\Spaceship.slnx",
       "d:\\Unity\\Spaceship\\Assembly-CSharp-Editor.csproj",
       "d:\\Unity\\Spaceship\\Assembly-CSharp.csproj",
-      "d:\\Unity\\Spaceship\\Unity.UOS.Encrypt.csproj"
+      "d:\\Unity\\Spaceship\\Unity.UOS.Encrypt.csproj",
+      "d:\\Unity\\Spaceship_0\\Spaceship_0.sln",
+      "d:\\Unity\\Spaceship_0\\Spaceship.slnx",
+      "d:\\Unity\\Spaceship_0\\Assembly-CSharp-Editor.csproj",
+      "d:\\Unity\\Spaceship_0\\Assembly-CSharp.csproj",
+      "d:\\Unity\\Spaceship_0\\Unity.UOS.Encrypt.csproj"
     ]
   },
   "extensions": {
