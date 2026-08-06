@@ -33,7 +33,8 @@
       "d:\\Unity\\Spaceship_0\\Assembly-CSharp-Editor.csproj",
       "d:\\Unity\\Spaceship_0\\Assembly-CSharp.csproj",
       "d:\\Unity\\Spaceship_0\\Unity.UOS.Encrypt.csproj"
-    ]
+    ],
+    "dotnet.defaultSolution": "disable"
   },
   "extensions": {
     "recommendations": []
