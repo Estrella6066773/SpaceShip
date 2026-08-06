@@ -165,7 +165,7 @@ public class ShipBlueprint : ScriptableObject
 |----------|------|------|
 | **地图** | `mapWidth`、`mapHeight` | 500m × 500m |
 | **日循环** | `dayDurationSeconds` | 日时长（可配置） |
-| **日消耗** | `foodPerDay` | 每日食物消耗（默认 5） |
+| **日消耗** | `foodPerDay` | 每日能源消耗（默认 5） |
 | **默认移动** | 基础速度/阻力/角阻尼 | 敌舰等非玩家船使用的移动参数 |
 | **视野** | `baseVisionRadius`、`lightAngle`、`lightRange` | 视野范围/60°/80m |
 | **雷达** | `radarRange`、`radarExpiryTime` | 100m 扫描 |
