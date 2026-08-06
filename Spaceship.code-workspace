@@ -5,12 +5,16 @@
       "path": "."
     },
     {
-      "name": "📄 文档库: Oliveira",
-      "path": "../SpaceShip.worktrees/Oliveira"
+      "name": "📄 文档库: 导入工作",
+      "path": "../SpaceShip.worktrees/导入工作"
     },
     {
       "name": "🎮 程序",
       "path": "../../../Unity/Spaceship"
+    },
+    {
+      "name": "📄 文档库: Oliveira",
+      "path": "../SpaceShip.worktrees/Oliveira"
     },
     {
       "name": "🎮 程序 ss0",

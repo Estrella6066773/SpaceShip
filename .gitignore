@@ -17,3 +17,6 @@ $RECYCLE.BIN/
 ~$*.xlsx
 ~$*.pptx
 .~lock.*#
+
+# uvcs 私有配置（本机保留，不入库）
+.cursor/mcp.json
