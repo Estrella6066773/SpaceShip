@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "bindingId": "e63fe732-41ea-40e2-9444-e84502f9c6a0",
+  "bindingName": "SpaceShip",
+  "updatedAt": "2026-08-07T17:14:10.408Z",
+  "trigger": "schedule",
+  "documentCount": 1,
+  "commentCount": 2,
+  "replyCount": 2,
+  "documents": [
+    {
+      "gitPath": "01-设定设计/.草稿/故事规模.md",
+      "storageFile": "01-设定设计__.草稿__故事规模.md.comments.json",
+      "feishuDocToken": "PXf0d5jiVoyWRzxa7Y7cJTSpn3c",
+      "feishuNodeToken": "PXf0d5jiVoyWRzxa7Y7cJTSpn3c",
+      "documentTitle": "故事规模",
+      "documentUrl": "https://feishu.cn/docx/PXf0d5jiVoyWRzxa7Y7cJTSpn3c",
+      "commentCount": 2,
+      "replyCount": 2,
+      "updatedAt": "2026-08-07T17:14:10.402Z"
+    }
+  ]
+}
