@@ -1,5 +1,10 @@
 ---
-description: 不同对象间沟通默认使用事件-订阅框架，仅在需要同步结果、顺序保证等特殊情况才允许直接调用
+description: >-
+  Event-Subscription Communication — Communication between different objects
+  MUST default to the Event-Subscription framework. Direct method calls are only
+  allowed in special cases (synchronous return values, ordering guarantees, etc.).
+  | 对象间沟通优先使用事件-订阅 — 不同对象间沟通默认使用事件-订阅框架，仅在需要同步
+  结果、顺序保证等特殊情况才允许直接调用
 alwaysApply: true
 ---
 
