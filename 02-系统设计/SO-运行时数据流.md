@@ -1,240 +1,275 @@
 # ScriptableObject 配置 → 运行时数据流
 
 > 16 个 SO 类型 · 8 个命名空间 · 12 个中间持有者 · 40+ 个消费类
+> 数据流分两大场景：探索（Expedition）与休整站/车间（RestStop）
 
 ---
 
-## 数据流总览
+## 一、总览
 
 ```mermaid
-flowchart LR
+flowchart TB
+    subgraph S1["① 探索场景 Expedition"]
+        direction TB
+        GC["SpaceshipGameConfiguration<br/>总配置（聚合 Game 全部 SO）"]
+        GM["SpaceshipGameManager（单例）"]
+        TD["TemporaryGameDirector"]
+        FC["SpaceshipGameFlowController"]
+    end
 
-  subgraph SO["📦 SO 配置层"]
-    subgraph G_SO["Game"]
-      G1["SpaceshipGameConfiguration 总配置入口"]
-      G2["SpaceshipWorldRules 地图碰撞雷达"]
-      G3["LinkRulesConfig 链接锚点弹簧"]
-      G4["ShipResourceConsumptionConfig 燃料食物弹药速率"]
-      G5["PlayerShipSettings 操控摄像机参数"]
-      G6["MinimumSupplyConfig 最低物资阈值"]
+    subgraph S2["② 休整站/车间 RestStop"]
+        direction TB
+        WL["ShipWorkshopLibrary<br/>（聚合 Game SO 副本 + 已保存飞船）"]
+        WE["ShipWorkshopEditingService"]
+        WS["WorkshopEditorSpace"]
+        SS["ShopSystem"]
+        QS["QuestSystem"]
     end
-    subgraph C_SO["Cargo"]
-      C1["CargoItemDefinition 货物类别价格堆叠"]
-    end
-    subgraph E_SO["Economy"]
-      E1["ShopDefinition 商品表折扣刷新"]
-      E2["WarehouseDefinition 仓库容量堆叠规则"]
-    end
-    subgraph W_SO["Workshop"]
-      W1["WorkshopEditorConfig 拖拽边界结构上限"]
-      W2["ShipWorkshopLibrary 聚合GameSO+飞船列表"]
-    end
-    subgraph M_SO["Module"]
-      M1["ModuleDefinition 速度武器护盾雷达"]
-    end
-    subgraph B_SO["Blueprint"]
-      B1["ShipBlueprint 模块布局初始货物"]
-    end
-    subgraph Q_SO["Quest"]
-      Q1["QuestConfig 阶段目标奖励前置"]
-      Q2["QuestGroupConfig 任务分组标签"]
-    end
-    subgraph P_SO["Presentation"]
-      P1["SpaceshipPresentationConfig 中文字体"]
-    end
-  end
 
-  subgraph HOLD["🔗 持有层 运行时间组件"]
-    H1["SpaceshipGameManager 单例Core"]
-    H2["TemporaryGameDirector 组件Core"]
-    H3["SpaceshipGameFlowController 组件Core"]
-    H4["ShipWorkshopEditingService 服务Workshop"]
-    H5["ShipCargoHold 组件Ships"]
-    H6["WorkshopCargoSlot 组件Workshop"]
-    H7["WorkshopCargoService 服务Workshop"]
-    H8["ShopSystem 服务Shop"]
-    H9["WorkshopEditorSpace 组件Workshop"]
-    H10["ShipModule 组件ShipsAssembly"]
-    H11["ShipWorkshopTestShipSpawner 组件Workshop"]
-    H12["SpaceshipRestStopController 组件Core"]
-    H13["QuestSystem 服务Quest"]
-    H14["SpaceshipPresentationInitializer 组件UI"]
-  end
+    subgraph S3["③ 存档持久化"]
+        SV["GameSaveService"]
+        SN["ShipRuntimeSnapshot"]
+    end
 
-  subgraph CONS["⚙️ 消费层 游戏逻辑"]
-    CN1["ShipAssembly.ConfigurePhysics()"]
-    CN2["ShipMotionController 推力阻尼"]
-    CN3["ShipCollisionFeedback"]
-    CN4["ShipSensorModules 雷达探测"]
-    CN5["SpaceshipWorldMap 地图生成"]
-    CN6["SalvageGenerator 残骸生成"]
-    CN7["EnemyShipController"]
-    CN8["ShipFuelConsumptionManager"]
-    CN9["ShipFoodConsumptionManager"]
-    CN10["ShipAmmunitionConsumptionManager"]
-    CN11["ShipCameraFollower"]
-    CN12["ShipAssemblyInteractionController"]
-    CN13["LinkRules.FromConfig()"]
-    CN14["WorkshopStructure 拖拽边界"]
-    CN15["ModuleLinkAnchorView"]
-    CN16["ShipBlueprintRuntimeBuilder BuildShip()"]
-    CN17["ShipCombatController 武器护盾"]
-    CN18["ShipWorkshopAssetExporter 保存删除"]
-    CN19["ShipRuntimeSnapshot 快照恢复"]
-    CN20["ShopService 买卖定价"]
-    CN21["WorkshopWarehouse 存取货物"]
-    CN22["CargoConsumptionService"]
-    CN23["CargoPickup"]
-    CN24["WorkshopDepartureResolver 出航检查"]
-    CN25["QuestService 激活接取完成"]
-    CN26["QuestPanel UI"]
-    CN27["QuestEventSource"]
-    CN28["GameSaveService 存档读档"]
-    CN29["GameStartMenuController 字体设置"]
-  end
+    GC --> GM
+    GC --> TD
+    GC --> FC
+    WL --> WE
+    FC --> SV
+    SV --> SN
 
-  G1 -.-> H1
-  G1 -.-> H2
-  G1 -.-> H3
-  G2 -.-> H2
-  G3 -.-> H3
-  G4 -.-> H2
-  G4 -.-> H3
-  G5 -.-> H3
-  G6 -.-> H4
-  G2 -.-> CN1
-  G2 -.-> CN2
-  G2 -.-> CN3
-  G2 -.-> CN4
-  G2 -.-> CN5
-  G2 -.-> CN6
-  G2 -.-> CN7
-  G4 -.-> CN8
-  G4 -.-> CN9
-  G4 -.-> CN10
-  G5 -.-> CN11
-  G5 -.-> CN12
-  G3 -.-> CN13
-  G3 -.-> CN14
-  G3 -.-> CN15
-  C1 -.-> H5
-  C1 -.-> H6
-  C1 -.-> H7
-  C1 -.-> CN22
-  C1 -.-> CN23
-  C1 -.-> CN20
-  C1 -.-> CN21
-  C1 -.-> CN19
-  E1 -.-> H8
-  E2 -.-> H4
-  E2 -.-> H3
-  E1 -.-> CN20
-  E2 -.-> CN21
-  W1 -.-> H9
-  W2 -.-> H4
-  W2 -.-> H11
-  W1 -.-> CN14
-  W1 -.-> CN24
-  W2 -.-> CN18
-  M1 -.-> H10
-  M1 -.-> H8
-  M1 -.-> CN1
-  M1 -.-> CN16
-  M1 -.-> CN20
-  M1 -.-> CN2
-  M1 -.-> CN4
-  M1 -.-> CN17
-  B1 -.-> H12
-  B1 -.-> H4
-  B1 -.-> H9
-  B1 -.-> CN16
-  B1 -.-> CN18
-  Q1 -.-> H13
-  Q1 -.-> CN25
-  Q2 -.-> CN25
-  Q1 -.-> CN26
-  Q1 -.-> CN27
-  Q1 -.-> CN28
-  P1 -.-> H14
-  P1 -.-> W2
-  P1 -.-> CN29
-  G1 -.-> B1
-  E1 -.-> C1
-  E1 -.-> M1
-  B1 -.-> C1
-  B1 -.-> M1
-  W2 -.-> G2
-  W2 -.-> G3
-  W2 -.-> G4
-  W2 -.-> G5
-  W2 -.-> P1
-  H3 -.-> CN28
-  CN28 -.-> CN19
+    classDef so fill:#dbeafe,stroke:#2563eb,color:#1e3a8a;
+    classDef hold fill:#fef3c7,stroke:#d97706,color:#78350f;
+    classDef save fill:#d1fae5,stroke:#059669,color:#064e3b;
+    class GC,WL so;
+    class GM,TD,FC,WE,WS,SS,QS hold;
+    class SV,SN save;
 ```
 
 ---
 
-## 两大场景分叉
+## 二、探索场景：SO → 消费类
 
-### 探索场景（Expedition）
+```mermaid
+flowchart TB
+    subgraph GW["Game 命名空间 SO"]
+        WRL["SpaceshipWorldRules"]
+        RES["ShipResourceConsumptionConfig"]
+        SET["PlayerShipSettings"]
+        LNK["LinkRulesConfig"]
+    end
 
-```
-SpaceshipGameConfiguration
-  ├─→ SpaceshipGameManager（单例，持有总配置）
-  ├─→ TemporaryGameDirector
-  │     ├─ WorldRules → ShipAssembly / ShipMotionController / ShipCollisionFeedback
-  │     │               / ShipSensorModules / SpaceshipWorldMap / SalvageGenerator / EnemyShipController
-  │     └─ ResourceConfig → 三个消耗管理器（燃料 / 食物 / 弹药）
-  └─→ SpaceshipGameFlowController
-        ├─ PlayerShipSettings → ShipCameraFollower / ShipAssemblyInteractionController
-        └─ LinkRulesConfig → LinkRules.FromConfig() → 链接交互控制器 + 锚点视图
-```
+    subgraph C1["世界物理 / 地图"]
+        A1["ShipAssembly.ConfigurePhysics"]
+        A2["ShipMotionController"]
+        A3["ShipCollisionFeedback"]
+        A4["ShipSensorModules"]
+        A5["SpaceshipWorldMap"]
+        A6["SalvageGenerator"]
+        A7["EnemyShipController"]
+    end
 
-### 休整站 / 车间场景（RestStop）
+    subgraph C2["消耗管理"]
+        B1["ShipFuelConsumptionManager"]
+        B2["ShipFoodConsumptionManager"]
+        B3["ShipAmmunitionConsumptionManager"]
+    end
 
-```
-ShipWorkshopLibrary（聚合 Game SO 副本 + 已保存飞船）
-  └─→ ShipWorkshopEditingService
-        ├─ WarehouseDefinition → WorkshopWarehouse
-        ├─ MinimumSupplyConfig → 借贷补全
-        └─ ShipBlueprint → WorkshopEditorSpace / 导出 / 快照恢复
+    subgraph C3["操控 / 摄像机"]
+        D1["ShipCameraFollower"]
+        D2["ShipAssemblyInteractionController"]
+    end
 
-WorkshopEditorConfig → WorkshopEditorSpace
-  └─→ WorkshopStructure（拖拽物理 / 边界）
-  └─→ WorkshopDepartureResolver（出航物资检查）
+    subgraph C4["链接规则"]
+        E1["LinkRules.FromConfig"]
+        E2["WorkshopStructure"]
+        E3["ModuleLinkAnchorView"]
+    end
 
-ShopSystem → ShopDefinition → ShopService（买卖定价）
+    WRL --> A1 & A2 & A3 & A4 & A5 & A6 & A7
+    RES --> B1 & B2 & B3
+    SET --> D1 & D2
+    LNK --> E1 & E2 & E3
 
-QuestSystem → QuestConfig → QuestService → QuestPanel / QuestEventSource
+    classDef so fill:#dbeafe,stroke:#2563eb,color:#1e3a8a;
+    classDef con fill:#f3e8ff,stroke:#9333ea,color:#4c1d95;
+    class WRL,RES,SET,LNK so;
+    class A1,A2,A3,A4,A5,A6,A7,B1,B2,B3,D1,D2,E1,E2,E3 con;
 ```
 
 ---
 
-## 存档路径
+## 三、休整站/车间场景
 
+```mermaid
+flowchart TB
+    subgraph ESO["Economy SO"]
+        SHOP["ShopDefinition"]
+        WH["WarehouseDefinition"]
+    end
+
+    subgraph HOLD["持有者"]
+        SH["ShopSystem"]
+        ED["ShipWorkshopEditingService"]
+        ES["WorkshopEditorSpace"]
+        QSYS["QuestSystem"]
+    end
+
+    subgraph CON["消费类"]
+        SSV["ShopService"]
+        WW["WorkshopWarehouse"]
+        WST["WorkshopStructure"]
+        WDR["WorkshopDepartureResolver"]
+        QSV["QuestService"]
+        QP["QuestPanel"]
+    end
+
+    SHOP --> SH --> SSV
+    WH --> ED --> WW
+    ED --> WST
+    WDR --> ES
+    QSYS --> QSV --> QP
+
+    classDef so fill:#d1fae5,stroke:#059669,color:#064e3b;
+    classDef hold fill:#fef3c7,stroke:#d97706,color:#78350f;
+    classDef con fill:#f3e8ff,stroke:#9333ea,color:#4c1d95;
+    class SHOP,WH so;
+    class SH,ED,ES,QSYS hold;
+    class SSV,WW,WST,WDR,QSV,QP con;
 ```
-GameSaveService（Core/）管理 SaveData
-  ├─ 金币 / 欠账
-  ├─ 任务状态（QuestSaveEntry.questId）
-  ├─ 模块库存
-  ├─ 货物库存
-  └─ 仓库库存 / 货架库存
 
-写入时机：SpaceshipGameFlowController → 失败时 / 结算时合并入仓库
-跨场景传递：ShipRuntimeSnapshot → 飞船状态（货物快照）
+---
+
+## 四、货物 / 模块 / 蓝图
+
+```mermaid
+flowchart TB
+    subgraph SO["SO"]
+        CGO["CargoItemDefinition"]
+        MOD["ModuleDefinition"]
+        BP["ShipBlueprint"]
+    end
+
+    subgraph HOLD["持有者"]
+        CH["ShipCargoHold"]
+        SM["ShipModule"]
+        RC["SpaceshipRestStopController"]
+    end
+
+    subgraph CON["消费类"]
+        CCS["CargoConsumptionService"]
+        CP["CargoPickup"]
+        SSV["ShopService"]
+        BRB["ShipBlueprintRuntimeBuilder"]
+        SCC["ShipCombatController"]
+        SMC["ShipMotionController"]
+        AEX["ShipWorkshopAssetExporter"]
+        RSN["ShipRuntimeSnapshot"]
+    end
+
+    CGO --> CH --> CCS
+    CGO --> CP
+    CGO --> SSV
+    CGO --> RSN
+    MOD --> SM --> SCC
+    MOD --> SMC
+    MOD --> SSV
+    BP --> RC --> BRB
+    BP --> AEX
+    BP --> BRB
+
+    classDef so fill:#ffedd5,stroke:#ea580c,color:#7c2d12;
+    classDef hold fill:#fef3c7,stroke:#d97706,color:#78350f;
+    classDef con fill:#f3e8ff,stroke:#9333ea,color:#4c1d95;
+    class CGO,MOD,BP so;
+    class CH,SM,RC hold;
+    class CCS,CP,SSV,BRB,SCC,SMC,AEX,RSN con;
+```
+
+---
+
+## 五、任务 / 表现
+
+```mermaid
+flowchart TB
+    QCFG["QuestConfig"]
+    QGRP["QuestGroupConfig"]
+    PCFG["SpaceshipPresentationConfig"]
+
+    QSYS["QuestSystem"]
+    PINT["SpaceshipPresentationInitializer"]
+
+    QSV["QuestService"]
+    QP["QuestPanel"]
+    QEV["QuestEventSource"]
+    GSV["GameSaveService"]
+    MENU["GameStartMenuController"]
+
+    QCFG --> QSYS --> QSV
+    QGRP --> QSV
+    QSV --> QP
+    QSV --> QEV
+    QCFG --> GSV
+    PCFG --> PINT --> MENU
+
+    classDef so fill:#dbeafe,stroke:#2563eb,color:#1e3a8a;
+    classDef hold fill:#fef3c7,stroke:#d97706,color:#78350f;
+    classDef con fill:#f3e8ff,stroke:#9333ea,color:#4c1d95;
+    class QCFG,QGRP,PCFG so;
+    class QSYS,PINT hold;
+    class QSV,QP,QEV,GSV,MENU con;
 ```
 
 ---
 
 ## 跨命名空间引用
 
-| 引用路径 | 说明 |
-|---|---|
-| `SpaceshipGameConfiguration` → `ShipBlueprint` | 玩家基础飞船蓝图 |
-| `ShopDefinition` → `CargoItemDefinition`、`ModuleDefinition` | 商品条目指向货物/模块定义 |
-| `ShipBlueprint` → `CargoItemDefinition`、`ModuleDefinition` | 蓝图内初始货物和模块布局 |
-| `ShipWorkshopLibrary` → Game 全部 SO + `ShipBlueprint` 列表 | 车间资料库聚合 |
-| `WorkshopEditorConfig` → `LinkRulesConfig` | 车间版链接规则独立副本 |
+```mermaid
+flowchart LR
+    GC["SpaceshipGameConfiguration"]
+    WL["ShipWorkshopLibrary"]
+    SHOP["ShopDefinition"]
+    BP["ShipBlueprint"]
+    CGO["CargoItemDefinition"]
+    MOD["ModuleDefinition"]
+    LNK["LinkRulesConfig"]
+    WEC["WorkshopEditorConfig"]
+
+    GC --> BP
+    SHOP --> CGO
+    SHOP --> MOD
+    BP --> CGO
+    BP --> MOD
+    WL --> BP
+    WEC --> LNK
+
+    classDef so fill:#fce7f3,stroke:#db2777,color:#831843;
+    class GC,WL,SHOP,BP,CGO,MOD,LNK,WEC so;
+```
+
+---
+
+## 存档 / 恢复路径
+
+```mermaid
+flowchart TB
+    subgraph SAVE["SaveData（GameSaveService 管理）"]
+        GOLD["金币 / 欠账"]
+        QUEST["任务状态 QuestSaveEntry"]
+        MODINV["模块库存"]
+        CGOINV["货物库存"]
+        WHINV["仓库 / 货架库存"]
+    end
+
+    FC["SpaceshipGameFlowController<br/>失败时 / 结算时"]
+    SNAP["ShipRuntimeSnapshot<br/>跨场景传递飞船状态"]
+
+    FC --> SAVE
+    SAVE --> SNAP
+
+    classDef s fill:#d1fae5,stroke:#059669,color:#064e3b;
+    class GOLD,QUEST,MODINV,CGOINV,WHINV s;
+```
 
 ---
 
