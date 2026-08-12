@@ -82,19 +82,28 @@ flowchart TB
 
     subgraph C4["链接规则"]
         E1["LinkRules.FromConfig"]
-        E2["WorkshopStructure"]
-        E3["ModuleLinkAnchorView"]
+        E2["ModuleLinkAnchorView"]
     end
 
-    WRL --> A1 & A2 & A3 & A4 & A5 & A6 & A7
-    RES --> B1 & B2 & B3
-    SET --> D1 & D2
-    LNK --> E1 & E2 & E3
+    WRL --> A1
+    WRL --> A2
+    WRL --> A3
+    WRL --> A4
+    WRL --> A5
+    WRL --> A6
+    WRL --> A7
+    RES --> B1
+    RES --> B2
+    RES --> B3
+    SET --> D1
+    SET --> D2
+    LNK --> E1
+    LNK --> E2
 
     classDef so fill:#dbeafe,stroke:#2563eb,color:#1e3a8a;
     classDef con fill:#f3e8ff,stroke:#9333ea,color:#4c1d95;
     class WRL,RES,SET,LNK so;
-    class A1,A2,A3,A4,A5,A6,A7,B1,B2,B3,D1,D2,E1,E2,E3 con;
+    class A1,A2,A3,A4,A5,A6,A7,B1,B2,B3,D1,D2,E1,E2 con;
 ```
 
 ---
@@ -103,16 +112,18 @@ flowchart TB
 
 ```mermaid
 flowchart TB
-    subgraph ESO["Economy SO"]
+    subgraph WSO["SO"]
         SHOP["ShopDefinition"]
         WH["WarehouseDefinition"]
+        WEC["WorkshopEditorConfig"]
+        WL["ShipWorkshopLibrary"]
+        MIN["MinimumSupplyConfig"]
     end
 
     subgraph HOLD["持有者"]
         SH["ShopSystem"]
         ED["ShipWorkshopEditingService"]
         ES["WorkshopEditorSpace"]
-        QSYS["QuestSystem"]
     end
 
     subgraph CON["消费类"]
@@ -120,22 +131,24 @@ flowchart TB
         WW["WorkshopWarehouse"]
         WST["WorkshopStructure"]
         WDR["WorkshopDepartureResolver"]
-        QSV["QuestService"]
-        QP["QuestPanel"]
     end
 
-    SHOP --> SH --> SSV
-    WH --> ED --> WW
-    ED --> WST
-    WDR --> ES
-    QSYS --> QSV --> QP
+    SHOP --> SH
+    SH --> SSV
+    WH --> ED
+    ED --> WW
+    WL --> ED
+    MIN --> ED
+    WEC --> ES
+    ES --> WST
+    ES --> WDR
 
     classDef so fill:#d1fae5,stroke:#059669,color:#064e3b;
     classDef hold fill:#fef3c7,stroke:#d97706,color:#78350f;
     classDef con fill:#f3e8ff,stroke:#9333ea,color:#4c1d95;
-    class SHOP,WH so;
-    class SH,ED,ES,QSYS hold;
-    class SSV,WW,WST,WDR,QSV,QP con;
+    class SHOP,WH,WEC,WL,MIN so;
+    class SH,ED,ES hold;
+    class SSV,WW,WST,WDR con;
 ```
 
 ---
