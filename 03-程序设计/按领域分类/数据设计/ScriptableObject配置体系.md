@@ -1,241 +1,178 @@
-# ScriptableObject 配置体系
+# ScriptableObject 配置体系（重组后）
 
-> 作者：代码分析生成 | 创建日期：2026-07-29 | 最后修改：2026-08-02
+> 最后修改：2026-08-11 | 配置体系重组完成
 
-本文档描述 Spaceship 项目的 ScriptableObject 数据驱动配置体系。
+本文档记录重组后的全部 ScriptableObject 配置资产的参数职责边界与生效时机。
 
 ---
 
-## 配置架构
-
-项目采用**组合式配置**模式：一个顶层配置文件组合多个子配置，运行时通过 `SpaceshipGameManager` 单次读取。
+## 整体结构
 
 ```
-SpaceshipGameConfiguration (顶层)
-├── SpaceshipWorldRules        # 世界规则
-├── PlayerShipSettings         # 玩家飞船行为
+SpaceshipGameConfiguration (顶层总配置)
+├── SpaceshipWorldRules         # 世界规则（地图/日循环/视野/碰撞）
+├── PlayerShipSettings          # 玩家飞船行为（仅保留拆卸/摄像参数）
+├── LinkRulesConfig             # 局内链接规则（锚点判定/弹簧/判定容差/视觉）
 ├── SpaceshipPresentationConfig # 表现配置（字体/语言）
-├── ShipBlueprint[]            # 飞船蓝图（玩家/敌人，内嵌初始货物与模块布局）
-└── 随机残骸组数               # 世界生成参数
+├── ShipBlueprint[]             # 飞船蓝图
+└── ShipResourceConsumptionConfig # 资源消耗规则
 ```
-
-### 配置层次
-
-| 层次 | 资产类型 | 实例数 | 编辑器可见 |
-|------|----------|--------|-----------|
-| 顶层组合 | `SpaceshipGameConfiguration` | 1 个 | 是（Inspector 完整可见） |
-| 子配置 | `SpaceshipWorldRules` 等 | 4 个 | 是 |
-| 蓝图定义 | `ShipBlueprint` | 5 个 | 是 |
-| 模块定义 | `ModuleDefinition` | 9 个 | 是 |
-| 货物定义 | `CargoItemDefinition` | 多个 | 是 |
 
 ---
 
-## 配置资产清单
+## 资产职责与参数清单
 
-### 顶层配置
+### 1. ModuleDefinition — 模块定义
 
-| 资产 | 路径 | 职责 |
+**路径**：`Data/ScriptableObjects/Spaceship/Modules/`
+
+**职责**：定义飞船模块的静态属性。运行时经 `ConfigurePrototype` 方法按种类分配不同功能字段。
+
+**生效时机**：编辑器资产（构建时快照）；运行时不修改。
+
+| 参数 | 适用模块 | 说明 |
+|------|---------|------|
+| `displayName` | 全部 | 模块显示名称 |
+| `kind` | 全部 | 模块类型 |
+| `mass` | 全部 | 物理质量（影响碰撞与惯性） |
+| `maxHealth` | 全部 | 最大生命值 |
+| `facing` | 有方向模块 | Prefab 的初始功能朝向 |
+| `frontLinkEnabled` ... `leftLinkEnabled` | 全部 | 四向链接锚点开关 |
+| `loadCapacity` | Core / Thruster | 模块提供的装载上限 |
+| `baseForwardSpeed` | **仅 Core** | 核心模块基础前进速度（m/s） |
+| `baseBackwardSpeed` | **仅 Core** | 核心模块基础后退速度（m/s） |
+| `baseTurnSpeed` | **仅 Core** | 核心模块基础转会速度（°/s） |
+| `acceleration` | **仅 Core** | 线加速度（m/s²） |
+| `angularAcceleration` | **仅 Core** | 角加速度（°/s²） |
+| `linearDrag` | **仅 Core** | 线拖拽（自然减速） |
+| `angularDrag` | **仅 Core** | 角拖拽 |
+| `minimumSpeed` | **仅 Core** | 最低速度（m/s） |
+| `overloadSpeedMultiplierPerModule` | **仅 Core** | 每超载模块的速度衰减倍率 |
+| `forwardSpeedBonus` | Thruster | 动力模块在推力方向上的速度增益 |
+| `radarRange` / `radarCooldown` | Radar | 寻敌雷达半径与冷却 |
+| `lightAngle` / `lightRange` ... | Light | 发散光束（手电筒）参数 |
+| `ammunitionPerShot` / `weaponRange` ... | Cannon | 机炮射程/伤害/冷却/弹丸 |
+| `grappleRange` / `grappleCooldown` / `grappleActionDuration` / `grappleHalfAngle` | Grapple | 钩爪工作范围与瞄准半角 |
+| `shieldCapacity` / `shieldReflectionCost` ... | Shield | 电磁盾容量/消耗/回收 |
+
+---
+
+### 2. LinkRulesConfig — 链接规则配置
+
+**路径**：局内版 `Configs/Game/链接规则配置.asset`，车间版 `Configs/Workshop/链接规则配置.asset`
+
+**职责**：集中管理模块间链接贴合的全部物理与视觉参数。局内与车间各一份独立资产。
+
+**生效时机**：装配期快照（修改后重新进入场景或重建飞船生效）。
+
+| 分组 | 参数 | 说明 |
 |------|------|------|
-| `飞船游戏总配置` | `Data/ScriptableObjects/Spaceship/Configs/` | 组合所有子配置为一体，含 `IsValid` 全链校验 |
-
-### 子配置
-
-| 资产 | 路径 | 核心参数 |
-|------|------|----------|
-| `飞船世界规则` | 同上 | 地图尺寸、日循环（含 `FoodPerDay`）、默认移动规则、视野/雷达、小行星、碰撞与残骸 |
-| `玩家飞船行为配置` | 同上 | 移动、链接（锚点碰撞盒/链接/拆除时长）、反馈、钩爪半角、相机跟随 |
-| `飞船表现配置` | 同上 | 中文字体、界面语言、显示配置 |
-| `飞船工坊资料库` | 同上 | 世界规则 + 玩家配置 + 表现配置 + 已保存蓝图列表 |
-
-### 飞船蓝图
-
-| 资产 | 对应 Prefab | 阵营 |
-|------|------------|------|
-| `玩家飞船` | `玩家飞船.prefab` | Player |
-| `玩家新飞船` | `玩家新飞船.prefab` | Player |
-| `敌人新飞船` | `敌人新飞船.prefab` | Enemy |
-| `敌人新飞船 1` | `敌人新飞船 1.prefab` | Enemy |
-| `敌人3` | `敌人3.prefab` | Enemy |
-
-### 模块定义
-
-| 资产 | 对应 Prefab | ModuleKind |
-|------|------------|------------|
-| `核心模块` | 同名 .prefab | Core |
-| `动力模块` | 同名 .prefab | Thruster |
-| `固定式机炮` | 同名 .prefab | Cannon |
-| `寻敌雷达` | 同名 .prefab | Radar |
-| `发散光束` | 同名 .prefab | Light |
-| `电磁盾` | 同名 .prefab | Shield |
-| `储存模块` | 同名 .prefab | Storage |
-| `拆卸钩爪` | 同名 .prefab | Grapple |
-| `基础模块` | — | Empty |
+| 锚点判定 | `anchorCollisionBoxSize` | 四向碰撞盒尺寸 |
+| | `maxAngleError` | 两接触面法线最大角度误差（度） |
+| | `linkSnapDistance` | 两接触面中心最大间距（米） |
+| 贴合计时 | `normalLinkDuration` | 建立链接所需持续贴合时间（秒） |
+| | `recentDetachLinkDuration` | 刚拆下重连所需缩短时长（秒） |
+| | `seatedSeparationTolerance` | 计时期间允许的锚点间距上限（米） |
+| 贴合弹簧 | `seatSpringStiffness` / `seatSpringDamping` | 线弹簧刚度/阻尼（质量归一后） |
+| | `seatAngularStiffness` / `seatAngularDamping` | 角弹簧刚度/阻尼 |
+| | `seatTemporaryLinearDamping` / `seatTemporaryAngularDamping` | 贴合期间临时提高的阻尼 |
+| 判定死区 | `seatSpringZeroDistance` / `seatAngularDeadzone` | 误差低于此值时弹簧力为 0 |
+| | `seatPositionTolerance` / `seatAngleTolerance` / `seatVelocityTolerance` | 判定已贴合的三重容差 |
+| 视觉反馈 | `linkLineWidth` | 引导线宽度 |
+| | `availableAnchorColor` / `candidateAnchorColor` | 空闲/候选锚点颜色 |
 
 ---
 
-## ModuleDefinition 数据结构
+### 3. PlayerShipSettings — 玩家飞船行为配置
 
-```csharp
-[CreateAssetMenu(menuName = "...")]
-public class ModuleDefinition : ScriptableObject
-{
-    public ModuleKind kind;
-    public string displayName;        // 中文显示名
-    public float mass;                // 质量（影响飞船总质量与质心）
-    public float maxHealth;           // 最大生命值
-    public GameObject prefabReference;// 对应 Prefab 引用
-    public float thrusterSpeed;       // 动力模块推进速度（= Max(forwardSpeedBonus, turnSpeedBonus)）
-    public ModuleFunctionConfig[] functions; // 功能配置
-    // ...
-}
-```
+**路径**：`Configs/Game/玩家设置.asset`
 
-### ModuleKind 枚举
+**职责**：仅保留玩家交互专属参数（拆卸/摄像）。移动参数全部迁移至核心模块定义，链接参数全部迁移至 `LinkRulesConfig`。
 
-| 值 | 中文 |
-|----|------|
-| `Empty` | 基础模块 |
-| `Core` | 核心模块 |
-| `Thruster` | 动力模块 |
-| `Radar` | 寻敌雷达 |
-| `Light` | 发散光束 |
-| `Cannon` | 固定式机炮 |
-| `Grapple` | 拆卸钩爪 |
-| `Shield` | 电磁盾 |
-| `Storage` | 储存模块 |
+**生效时机**：装配期快照。
 
-### LocalDirection 枚举
-
-| 值 | 含义 | 网格偏移 |
-|----|------|----------|
-| `Forward` | 前方 | (0, +1) |
-| `Right` | 右侧 | (+1, 0) |
-| `Back` | 后方 | (0, -1) |
-| `Left` | 左侧 | (-1, 0) |
-
-### ShipFaction 枚举
-
-| 值 | 含义 |
-|----|------|
-| `Derelict` | 残骸 |
-| `Player` | 玩家 |
-| `Enemy` | 敌人 |
-| `Neutral` | 中立 |
+| 参数 | 说明 |
+|------|------|
+| `detachHoldDuration` | 长按拆卸持续时间（秒） |
+| `detachPointerTolerance` | 拆卸时指针偏离模块的容差距离（米） |
+| `cameraRotationFollowSpeed` | 摄像机旋转跟随速度 |
 
 ---
 
-## ShipBlueprint 数据结构
+### 4. SpaceshipWorldRules — 世界规则
 
-```csharp
-public class ShipBlueprint : ScriptableObject
-{
-    public string shipName;                          // 飞船名称
-    public ShipFaction faction;                      // 阵营
-    public ShipModulePlacement[] modulePlacements;   // 模块布局
-    public ShipInitialCargoPlacement[] initialCargo; // 初始货物
-    public GameObject exportedPrefab;                // 导出预制体引用
-}
-```
+**路径**：`Configs/Game/飞船世界规则.asset`
 
-### ShipModulePlacement
+**职责**：地图、日循环、雷达/视野、碰撞物理、小行星生成、残骸拖拽、镜头抖动。
 
-| 字段 | 类型 | 说明 |
+| 分组 | 参数 | 说明 |
 |------|------|------|
-| `moduleDefinition` | `ModuleDefinition` | 模块定义引用 |
-| `gridX` | `int` | 网格 X 坐标 |
-| `gridY` | `int` | 网格 Y 坐标 |
-| `quarterTurns` | `int` | 四分之一圈旋转 |
+| 地图 | `MapWidth`, `MapHeight`, `MapBorderThickness` | 世界地图尺寸与边界 |
+| 日循环 | `DaySeconds` | 一天真实秒数 |
+| 雷达/视野 | `defaultRadarRadius`, `visionMaskRadius`, `sensorUpdateInterval` | 默认雷达半径、视野遮罩、传感器刷新间隔 |
+| 小行星 | `asteroidGroupSpawnPerRadius`, `asteroidBaseCount` | 小行星生成密度与基数 |
+| 碰撞 | `collisionBaseDamage`, `collisionDamageMultiplierMass` | 碰撞伤害基础值与质量系数 |
+| 残骸 | `derelictLinearDrag` | 残骸线性阻尼（防止残骸永远漂流） |
+| 镜头 | `shakeDuration`, `shakeMagnitude` | 碰撞时镜头抖动参数 |
 
-### ShipInitialCargoPlacement
+---
 
-| 字段 | 类型 | 说明 |
+### 5. ShipResourceConsumptionConfig — 资源消耗配置
+
+**路径**：内嵌于 `SpaceshipGameConfiguration` 或独立引用。
+
+| 参数 | 说明 |
+|------|------|
+| `fuelPer100Meters` | 每百米燃油消耗 |
+| `foodPerDay` | 船员每人每天食物消耗 |
+| `ammunitionPerShot` | 每次射击弹药消耗（注：实例层数量由 `ModuleDefinition.ammunitionPerShot` 最终控制） |
+
+---
+
+### 6. WorkshopEditorConfig — 车间编辑配置
+
+**路径**：`Configs/Workshop/车间编辑配置.asset`
+
+| 分组 | 参数 | 说明 |
 |------|------|------|
-| `cargoType` | `CargoType` | 货物类型 |
-| `count` | `int` | 初始数量 |
-| `targetStorageIndex` | `int` | 目标储存模块索引 |
-
-蓝图提供 `IsValid` / `ValidateInitialCargo` / `IsLayoutConnected` 静态校验。
-
----
-
-## SpaceshipWorldRules 数据结构
-
-| 参数分类 | 参数 | 说明 |
-|----------|------|------|
-| **地图** | `mapWidth`、`mapHeight` | 500m × 500m |
-| **日循环** | `dayDurationSeconds` | 日时长（可配置） |
-| **日消耗** | `foodPerDay` | 每日能源消耗（默认 5） |
-| **默认移动** | 基础速度/阻力/角阻尼 | 敌舰等非玩家船使用的移动参数 |
-| **视野** | `baseVisionRadius`、`lightAngle`、`lightRange` | 视野范围/60°/80m |
-| **雷达** | `radarRange`、`radarExpiryTime` | 100m 扫描 |
-| **小行星** | `asteroidCountMin`、`asteroidCountMax`、`asteroidSizeMin`、`asteroidSizeMax` | 20-30 个 / 2-8m |
-| **碰撞与残骸** | `collisionDamageMultiplier`、弹/摩擦/阻尼/震屏阈值 | 碰撞伤害系数与残骸参数 |
+| 边界 | `BoundsHalfWidth`, `BoundsHalfHeight`, `BoundaryWallThickness` | 编辑区边界尺寸 |
+| 链接 | `linkRulesConfig` | 引用车间专用链接规则配置 |
+| 结构 | `StructureAngularDamping`, `CenterOfMassBlendSpeed` | 结构刚体的角阻尼与质心融合速度 |
+| 沉降 | `SettleLinearDamping`, `SettleAngularDamping` | 结构沉降时的阻尼 |
 
 ---
 
-## CargoItemDefinition 与货物枚举
+### 7. ShipWorkshopLibrary — 工坊资料库
 
-### 货物分类体系（新）
+**路径**：`Configs/Game/飞船工坊资料库.asset`
 
-| 枚举 | 值 |
-|------|-----|
-| `CargoCategory` | Food / Fuel / Ammunition / Treasure |
-| `CargoRarity` | Common / Rare / Epic |
-| `AmmunitionType` | General |
-| `CargoIdentificationState` | Unidentified / Identified |
-
-`CargoCategory` 为新主枚举；`CargoType`（Food/Fuel/Ammunition/Treasure）保留为旧版兼容枚举，通过 `CargoCategoryCompatibility`（`ToCategory`/`ToLegacyType`）双向转换。
+引用：`worldRules`、`playerSettings`、`presentationConfig`、`linkRulesConfig`
 
 ---
 
-## 命名约定
+### 8. SpaceshipGameConfiguration — 游戏总配置
 
-根据项目规范，ScriptableObject 资产使用**中文文件名**：
+**路径**：`Configs/Game/飞船游戏总配置.asset`
 
-- 资产文件名：中文（如 `飞船游戏总配置.asset`）
-- `CreateAssetMenu` 菜单路径：中文
-- Inspector 分组标题：中文
-- C# 类型名和成员名：英文 PascalCase
-
-**禁止**重新生成英文名 SO；重命名时需同步 `.meta` 文件并保持 GUID 不变。
+组合全部子配置的顶层入口。新增字段 `linkRulesConfig`（局内版链接规则）。
 
 ---
 
-## 运行时访问模式
+## 参数职责迁移对照
 
-```csharp
-// 通过 SpaceshipGameManager 访问总配置
-var manager = GetComponent<SpaceshipGameManager>();
-var config = manager.Configuration;
-
-// 读取世界规则
-var worldRules = config.WorldRules;
-float dayDuration = worldRules.DayDurationSeconds;
-
-// 读取蓝图
-var playerBlueprint = config.PlayerBlueprint;
-foreach (var placement in playerBlueprint.ModulePlacements)
-{
-    // 实例化模块...
-}
-```
-
-配置数据在**场景加载时一次性读取**，运行时不再修改 SO 资产。`SpaceshipGameManager` 提供 `TryGetConfiguration` 带有效性校验。
-
----
-
-## 编辑器支持
-
-- `SpaceshipConfigurationEditors`：中文 SO Inspector 基类（`ChineseScriptableObjectEditor`）
-- `ModuleDefinitionEditor`：自定义 Inspector
-- 菜单 `Spaceship/飞船/生成配置与模块预制体`（`SpaceshipConfiguredTestAssetBuilder`）批量构建测试资产
-- `ShipWorkshopAssetExporter`：保存/更新蓝图 SO 并导出完整飞船 Prefab
-
----
-
-## 相关文档
-
-- [飞船组装系统](../模块设计/飞船组装系统.md)
-- [整体架构设计](../架构设计/整体架构.md)
-- [工具与编辑器清单](../工具与编辑器/工具清单.md)
+| 旧参数 | 原位置 | 新位置 |
+|--------|--------|--------|
+| `baseForwardSpeed` 等移动参数 | `PlayerShipSettings` / `WorldRules` | `ModuleDefinition.Core` |
+| `OverloadSpeedMultiplierPerModule` | `PlayerShipSettings` | `ModuleDefinition.Core` |
+| `LinkAnchorCollisionBoxSize` 等链接参数 | `PlayerShipSettings` | `LinkRulesConfig` |
+| `AnchorCollisionBoxSize` 等链接参数 | `WorkshopEditorConfig` | `LinkRulesConfig`（workshop） |
+| `grappleHalfAngle` | `PlayerShipSettings` | `ModuleDefinition.Grapple` |
+| `fuelPer100Meters`（模块层） | `ModuleDefinition` | 删除（统一由 `ShipResourceConsumptionConfig` 控制） |
+| `turnSpeedBonus` | `ModuleDefinition` | 删除（Thruster 速度统一为 `forwardSpeedBonus`） |
+| `EnemyRadarIntervalMin/Max` | `WorldRules` | 删除（敌舰雷达由传感器系统自行管理） |
+| `foodPerDay` | `WorldRules` | `ShipResourceConsumptionConfig` |
+| `ammunitionPerShot` | `ShipResourceConsumptionConfig` | `ModuleDefinition.Cannon` |
+| `description` | `CargoItemDefinition` | 删除（前端文本由本地化表管理） |
+| `boundWarehouse` | `ShopDefinition` | 删除 |
+| `boundExtractionPoints` | `WarehouseDefinition` | 删除 |
+| `resourceConfig` | `ShipWorkshopLibrary` | 删除 |
