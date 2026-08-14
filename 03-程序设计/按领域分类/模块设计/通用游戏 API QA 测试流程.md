@@ -254,6 +254,7 @@
 - [ ] WorldApi WO-1~WO-5 通过（出航）
 - [ ] 事件桥 E-1~E-6 通过
 - [ ] 反向桥 GC-1~GC-7 通过
+- [ ] API→SequenceMap→API 闭环验证（第 9 节）PASS
 - [ ] 兜底 SB-1~SB-4 通过
 - [ ] Console 无红色错误；SequenceMap `Problems` 无未处理错误
 - [ ] 全部用例完成后：恢复默认存档/测试数据，确认不影响正式存档
@@ -271,3 +272,56 @@
 | 图生成后运行无反应 | Runner 未绑定图 / 未生成代码 | 检查 Runner.Graph 引用；点 `Generate` 并等编译 |
 | `QuitGame` 意外触发退出 | 图中包含该节点 | 单独建图验证或最后执行 |
 | API 面板看不到「游戏/…」分类 | Registry 缓存未刷新 | `Tool > 刷新 API 扫描` |
+
+---
+
+## 9. API → SequenceMap → API 闭环验证
+
+**目的**：端到端验证完整回路——游戏代码（API）经反向桥驱动 SequenceMap 图 → 图内调用适配层 API 改游戏状态 → 数据回写图内变量 → 游戏代码读回并核对一致。这是对「适配层 + 反向桥 + 图内 API 解析」三者的集成冒烟，确保 API 能驱动图、图能调 API、数据双向贯通。
+
+**准备**：
+
+1. 编辑器菜单运行 `工具 > API 框架 > 生成-API到图到API闭环测试图`：
+   - 自动创建测试图 `Assets/Framework/SequenceMap/Database/QA_ApiSmapApi_FlowTest.asset`；
+   - 自动生成图代码 `Assets/Scripts/Api/Generated/QA_ApiSmapApi_FlowTest.cs`（归属 `Spaceship.Game` 程序集）。
+2. 场景装配（当前开发阶段手动挂载）：
+   - `GameApiBootstrap`（自动注册服务、接线事件桥）；
+   - `SequenceMapGraphRunner`：`Graph` 字段绑定 `QA_ApiSmapApi_FlowTest`，**不勾选 Awake 运行**（由测试脚本驱动）；
+   - `GraphControlService`（挂载并注册到 `GameServiceLocator`）；
+   - `ApiSmapApiFlowTester`。
+3. 进入 Play Mode，Inspector 右键 `ApiSmapApiFlowTester` 选择「运行-API到图到API闭环测试」。
+
+**测试图 `QA_ApiSmapApi_FlowTest` 内容**（由工具自动创建，也可在完整工作区查看）：
+
+| 节点 | 作用 |
+|---|---|
+| `root()` | 图入口 |
+| `OnCustomEvent == "QA_Start"` | 等待游戏代码投递启动事件 |
+| `$coinsBefore = GetCoins()` | 图内调用 GameApi 读金币 |
+| `AddCoins(100)` | 图内调用 GameApi 增加金币 |
+| `$coinsAfter = GetCoins()` | 图内读回增加后金币 |
+| `AccumulateGlobalProgress("QA_ApiSmapApi", 1)` | 图内调用 GameApi 累积全局进度 |
+| `TriggerEvent("QA_FlowDone")` | 图内投递完成事件 |
+| `$flowDone = true` | 置完成标志 |
+
+**自动断言**（Tester 顺序执行，超时 5 秒）：
+
+1. 图内 `coinsBefore` == 游戏代码调用前 `GetCoins()`；
+2. 图内 `coinsAfter` == 调用前金币 + 100（`AddCoins` 图内生效）；
+3. 游戏代码 `GetCoins()` == 图内 `coinsAfter`（图的副作用对游戏可见）；
+4. `GetGlobalProgress("QA_ApiSmapApi") >= 1`（图内累积的全局进度对游戏生效）。
+
+**预期结果**：Console 输出：
+
+```
+[API闭环测试] PASS：API→图→API 闭环完整跑通。before=… 图内before=… 图内after=… 当前=… progress=…
+```
+
+**常见失败与排查**：
+
+| 现象 | 可能原因 | 排查步骤 |
+|---|---|---|
+| 超时（`flowDone` 未置位） | 图未生成代码 / Runner 自动运行抢先 | 确认生成代码存在且编译通过；Runner 不勾选 Awake 运行；重跑「生成-API到图到API闭环测试图」 |
+| 未找到 Runner | Runner.Graph 未绑定该图 | 把 `QA_ApiSmapApi_FlowTest.asset` 拖入 Runner.Graph |
+| 未找到 GraphControlService | 组件未挂载或未注册 | 挂载组件并加入 `GameServiceLocator` 注册 |
+| 断言 2/3 失败 | 金币系统被其他来源改动（结算/存档） | 用全新存档或先 `SaveNow()` 固定基线再跑 |
