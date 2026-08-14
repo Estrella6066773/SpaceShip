@@ -420,6 +420,7 @@ public sealed class GraphControlService : MonoBehaviour
 5. **第五步**：刷新 SequenceMap API 面板，验证适配层 API 全部可发现、可拖入图、可生成
 6. **第六步**：建流程图样例（出航主循环 / 任务推进），生成代码，PlayMode 测试
 7. **第七步（已交付）**：P1 API 覆盖 `CombatApi`（开火/护盾/钩爪/雷达）+ `NavigationApi`（速度/转向/手动指令）+ `ResourcesApi`（燃料/食物/弹药/航程）+ `WorldApi`（小行星/残骸/敌舰/结算/天数），`GameApiBootstrap` 注册世界系统服务；后续游戏系统间命令/查询、UI 与自动化测试逐步改走核心能力层，向「行为可经 API 完成」演进
+8. **第八步（已交付）**：QA 验证闭环——分模块验收文档（`通用游戏 API QA 测试流程.md`）定义「前置条件 → 场景内路径 A（SequenceMap 图内调用）+ 路径 B（C# 直接调用）→ 事件桥 / 反向桥 → 验收清单」的逐步验证流程；运行时侧提供 `QAApiVerifier`（`Scripts/Api/Tools/`，挂场景空物体后 Inspector 右键「验证-全部」等菜单项，直接调用核心能力层并输出 `[QA]` 前缀的 PASS / FAIL / SKIP 日志），破坏性用例默认关闭
 
 ---
 
@@ -433,5 +434,7 @@ public sealed class GraphControlService : MonoBehaviour
 - [x] 事件桥事件名与图内 `OnXXX` 节点完全一致
 - [x] `GraphControlService` 可激活/停止图、投递事件、读写变量，且经 Locator 可解析
 - [x] `MissionApi` 可查询/接取/推进任务，任务状态与存档一致
+- [x] `QAApiVerifier` 编译通过并进入 `Spaceship.Game` 程序集，按模块输出 PASS / FAIL / SKIP
+- [x] QA 流程文档覆盖前置条件、路径 A / 路径 B、事件桥与反向桥验证、验收清单与排障
 - [ ] 流程图调用适配 API 后成功生成 C# 且编译通过
 - [ ] PlayMode 测试覆盖：命令成功 / 失败分支、事件等待、服务未装配兜底

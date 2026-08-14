@@ -57,135 +57,135 @@
 
 ## 3. 分模块验证用例
 
-> 表内「操作」列给出：路径 A 的节点内容写法（`函数名(参数)`），以及路径 B 对应的核心层方法。适配层枚举参数用**中文标签**（如 `食物`、`前向`、`核心模块`），`ApiEnum` 会自动解析（也接受英文枚举名）。
+> 表内「操作」列给出**真实英文方法签名**（`方法名(参数)`），图内节点与 C# 直接调用均可用同一签名——适配层方法名与核心层一致（枚举参数核心层用类型化值，适配层用字符串）。参数值为**英文枚举名**（如 `"Core"`、`"Forward"`、`"Food"`），`ApiEnum` 自动解析（也接受中文标签）；商品名等数据字符串按实际配置填写。核心层类型化签名对应关系见《通用游戏 API 框架.md》第 5 节。
 
 ### 3.1 GameApi —— 存档 / 经济（任意场景）
 
 | # | 操作 | 预期结果 |
 |---|---|---|
-| G-1 | 图内 `获取金币()`；C# `GameApi.GetCoins()` | 返回当前存档金币数（>0 或 0 均合法） |
-| G-2 | 图内 `增加金币(100)` 后再次 `获取金币()` | 第一次返回 `true`；金币比调用前多 100 |
-| G-3 | 图内 `扣除金币(99999999)` | 返回 `false`（金币不足，余额不变） |
-| G-4 | 图内 `获取欠账()`；`获取累计天数()`；`是否首次游戏()` | 返回存档对应值；类型正确 |
-| G-5 | 图内 `累加全局进度("QA_Test", 1)` 后 `读取全局进度("QA_Test")` | 累加返回 `true`；读取值 ≥ 1 |
-| G-6 | 图内 `立即保存存档()` | 返回 `true`（非测试模式）；存档写盘无报错 |
+| G-1 | `GetCoins()` | 返回当前存档金币数（>0 或 0 均合法） |
+| G-2 | `AddCoins(100)` 后再次 `GetCoins()` | 第一次返回 `true`；金币比调用前多 100 |
+| G-3 | `DeductCoins(99999999)` | 返回 `false`（金币不足，余额不变） |
+| G-4 | `GetDebt()`；`GetTotalDays()`；`IsFirstGame()` | 返回存档对应值；类型正确 |
+| G-5 | `AccumulateGlobalProgress("QA_Test", 1)` 后 `GetGlobalProgress("QA_Test")` | 累加返回 `true`；读取值 ≥ 1 |
+| G-6 | `SaveNow()` | 返回 `true`（非测试模式）；存档写盘无报错 |
 
 ### 3.2 WarehouseApi —— 仓库 / 库存（休整站 `ShipBuild`）
 
 | # | 操作 | 预期结果 |
 |---|---|---|
-| W-1 | 图内 `查询模块库存("核心模块","前向")`；C# `WarehouseApi.CountModules(ModuleKind.Core, LocalDirection.Forward)` | 返回存档模块库存数量（≥0） |
-| W-2 | 图内 `增加模块库存("储存模块","右向",2)` 后查询 | 增加返回 `true`；查询值 +2 |
-| W-3 | 图内 `扣除模块库存("储存模块","右向",2)` | 返回 `true`；库存恢复原值 |
-| W-4 | 图内 `查询货物库存("食物")` → `增加货物库存("食物",10)` → 再查询 | 增加返回 `true`；数量 +10 |
-| W-5 | 图内 `仓库放入模块("储存模块","右向",1)` → `查询仓库模块("储存模块","右向")` | 放入返回 `true`；绑定仓库数量 +1 |
-| W-6 | 图内 `仓库取出模块("储存模块","右向",1)` | 返回 `true`；绑定仓库数量恢复 |
-| W-7 | 图内 `仓库放入货物("燃料",5)` → `仓库取出货物("燃料",5)` | 两次均返回 `true`；总量不变 |
-| W-8 | 图内 `仓库扩容(2,2)` | 返回 `true`；仓库模块格/物品格增加（可在 UI 确认） |
+| W-1 | `CountModules("Core", "Forward")` | 返回存档模块库存数量（≥0） |
+| W-2 | `AddModules("Storage", "Right", 2)` 后 `CountModules("Storage", "Right")` | 增加返回 `true`；查询值 +2 |
+| W-3 | `RemoveModules("Storage", "Right", 2)` | 返回 `true`；库存恢复原值 |
+| W-4 | `CountCargo("Food")` → `AddCargo("Food", 10)` → 再 `CountCargo("Food")` | 增加返回 `true`；数量 +10 |
+| W-5 | `WarehouseAddModules("Storage", "Right", 1)` 后 `CountWarehouseModules("Storage", "Right")` | 放入返回 `true`；绑定仓库数量 +1 |
+| W-6 | `WarehouseTakeModules("Storage", "Right", 1)` | 返回 `true`；绑定仓库数量恢复 |
+| W-7 | `WarehouseAddItems("Fuel", 5)` → `WarehouseTakeItems("Fuel", 5)` | 两次均返回 `true`；总量不变 |
+| W-8 | `WarehouseExpand(2, 2)` | 返回 `true`；仓库模块格/物品格增加（可在 UI 确认） |
 
 ### 3.3 ShopApi —— 商店（休整站 `ShipBuild`）
 
 | # | 操作 | 预期结果 |
 |---|---|---|
-| S-1 | 图内 `获取商店货架("食物")`；C# `ShopApi.GetShelfRemaining("食物")` | 返回货架剩余库存（≥0；商品名支持显示名或资产名） |
-| S-2 | 图内 `查询购买价("食物")`；`查询出售价("食物")` | 返回正整数；购买价 ≥ 出售价通常成立 |
-| S-3 | 图内 `购买商品("食物",1)` 后查金币与货架 | 返回 `true`；金币减少、货架剩余 -1、仓库食物 +1 |
-| S-4 | 图内 `购买商品("食物",999999)` | 返回 `false`（金币不足或货架不足，无副作用） |
-| S-5 | 图内 `出售物品("食物",1)` 后查金币 | 返回 `true`；金币增加、仓库食物 -1 |
-| S-6 | 图内 `出售模块("储存模块","右向",1)` | 返回 `true`；金币增加、仓库模块 -1 |
-| S-7 | 图内 `刷新货架()`；`清空赎回池()` | 均返回 `true`；无报错 |
+| S-1 | `GetShelfRemaining("食物")` | 返回货架剩余库存（≥0；商品名支持显示名或资产名） |
+| S-2 | `GetBuyPrice("食物")`；`GetSellPrice("食物")` | 返回正整数；购买价 ≥ 出售价通常成立 |
+| S-3 | `TryBuy("食物", 1)` 后查金币与货架 | 返回 `true`；金币减少、货架剩余 -1、仓库食物 +1 |
+| S-4 | `TryBuy("食物", 999999)` | 返回 `false`（金币不足或货架不足，无副作用） |
+| S-5 | `TrySellItem("Food", 1)` 后查金币 | 返回 `true`；金币增加、仓库食物 -1 |
+| S-6 | `TrySellModule("Storage", "Right", 1)` | 返回 `true`；金币增加、仓库模块 -1 |
+| S-7 | `RefreshStock()`；`ClearRedemption()` | 均返回 `true`；无报错 |
 
 ### 3.4 WorkshopApi —— 车间（休整站 `ShipBuild`）
 
 | # | 操作 | 预期结果 |
 |---|---|---|
-| WS-1 | 图内 `是否测试模式()` | 返回 `bool`（与当前启动方式一致） |
-| WS-2 | 图内 `编辑区结构数量()`；`编辑区模块总数()` | 返回编辑区当前结构数与模块件数（≥0） |
-| WS-3 | 图内 `出航校验()` | 返回 `bool`；`false` 时（不可出航）为预期，需结合 UI 提示核对原因 |
-| WS-4 | 图内 `最低供给评估()`；`补足最低供给()` | 评估返回 `bool`；补足返回借贷补全的数量（≥0） |
-| WS-5 | 图内 `生成船体数据()` | 校验通过返回 `true`；失败返回 `false`（与出航校验一致） |
+| WS-1 | `IsTestMode()` | 返回 `bool`（与当前启动方式一致） |
+| WS-2 | `StructureCount()`；`StructureModuleCount()` | 返回编辑区当前结构数与模块件数（≥0） |
+| WS-3 | `CanDepart()` | 返回 `bool`；`false` 时（不可出航）为预期，需结合 UI 提示核对原因 |
+| WS-4 | `EvaluateMinimumSupply()`；`FulfillMinimumSupply()` | 评估返回 `bool`；补足返回借贷补全的数量（≥0） |
+| WS-5 | `TryBuildShipData()` | 校验通过返回 `true`；失败返回 `false`（与出航校验一致） |
 
 ### 3.5 ShipApi —— 飞船局内（出航 `ShipTest_Map`）
 
 | # | 操作 | 预期结果 |
 |---|---|---|
-| SH-1 | 图内 `玩家飞船是否存在()` | 有玩家船返回 `true` |
-| SH-2 | 图内 `是否可运行()`；`是否已摧毁()`；`是否含核心()` | 与玩家船实际状态一致（有核心未摧毁 → 可运行） |
-| SH-3 | 图内 `模块总数()`；`总质量()`；`载荷上限()` | 与玩家船模块/质量/容量一致（>0） |
-| SH-4 | 图内 `核心生命值()` | 活核心生命值（>0） |
-| SH-5 | 图内 `查询可用货物("燃料")`；C# `ShipApi.GetConsumableTotal(CargoCategory.Fuel)` | 返回货舱可消耗燃料（≥0） |
-| SH-6 | 图内 `消耗货物("燃料",1)` 后查询 | 返回 `true`；数量 -1 |
-| SH-7 | 图内 `添加货物("燃料",1)` 后查询 | 返回 `true`；数量恢复 |
-| SH-8 | 图内 `摧毁玩家船("QA 测试")` | 返回 `true`；随后玩家船被摧毁（`是否已摧毁()` 为 `true`） |
-| SH-9 | 图内 `船体几何快照宽度()`；`船体几何快照高度()`；`飞船位置()` | 返回正数/Vector3，与场景实际一致 |
+| SH-1 | `HasPlayerShip()` | 有玩家船返回 `true` |
+| SH-2 | `IsOperational()`；`IsDestroyed()`；`HasCore()` | 与玩家船实际状态一致（有核心未摧毁 → 可运行） |
+| SH-3 | `ModuleCount()`；`TotalMass()`；`LoadCapacity()` | 与玩家船模块/质量/容量一致（>0） |
+| SH-4 | `CoreHealth()` | 活核心生命值（>0） |
+| SH-5 | `GetConsumableTotal("Fuel")` | 返回货舱可消耗燃料（≥0） |
+| SH-6 | `TryConsume("Fuel", 1)` 后查询 | 返回 `true`；数量 -1 |
+| SH-7 | `TryAddCargo("Fuel", 1)` 后查询 | 返回 `true`；数量恢复 |
+| SH-8 | `DestroyPlayerShip("QA 测试")` | 返回 `true`；随后玩家船被摧毁（`IsDestroyed()` 为 `true`） |
+| SH-9 | `ShipWidth()`；`ShipHeight()`；`ShipPosition()` | 返回正数/Vector3，与场景实际一致 |
 
 ### 3.6 FlowApi —— 流程控制（出航 `ShipTest_Map`）
 
 | # | 操作 | 预期结果 |
 |---|---|---|
-| F-1 | 图内 `获取游戏状态()`；`是否出航中()` | 返回当前状态名（如 `Expedition`）与 `bool` |
-| F-2 | 图内 `进入整理()` | 返回 `true`；状态变为 `Organizing` |
-| F-3 | 图内 `出航()` | 返回 `true`；状态变为 `Expedition` |
-| F-4 | 图内 `进入暂停()` → `恢复()` | 均返回 `true`；游戏时间暂停后恢复 |
-| F-5 | 图内 `请求结算("QA星球",true)` | 返回 `true`；触发结算请求 |
-| F-6 | 图内 `等待结算确认()` | 结算请求后返回 `true`，否则 `false` |
-| F-7 | 图内 `失败("QA 测试失败")` | 返回 `true`；进入 `Failure` 状态 |
+| F-1 | `GetGameState()`；`IsExpeditionActive()` | 返回当前状态名（如 `Expedition`）与 `bool` |
+| F-2 | `EnterOrganizing()` | 返回 `true`；状态变为 `Organizing` |
+| F-3 | `ExitOrganizingToExpedition()` | 返回 `true`；状态变为 `Expedition` |
+| F-4 | `EnterPause()` → `Resume()` | 均返回 `true`；游戏时间暂停后恢复 |
+| F-5 | `RequestSettlement("QA星球", true)` | 返回 `true`；触发结算请求 |
+| F-6 | `WaitingForSettlementConfirm()` | 结算请求后返回 `true`，否则 `false` |
+| F-7 | `Fail("QA 测试失败")` | 返回 `true`；进入 `Failure` 状态 |
 
-> ⚠️ `退出游戏()`（`QuitGame`）会退出应用，**仅在验证结束时单独执行**。
+> ⚠️ `QuitGame()` 会退出应用，**仅在验证结束时单独执行**。
 
 ### 3.7 MissionApi —— 任务（出航 / 休整站均可）
 
 | # | 操作 | 预期结果 |
 |---|---|---|
-| M-1 | 图内 `可见任务数量()`；C# `MissionApi.GetVisibleMissionCount()` | 返回当前开放可见任务数（≥0） |
-| M-2 | 图内 `是否存在任务("任务ID")` | 已载入任务返回 `true`；未知 ID 返回 `false` |
-| M-3 | 图内 `获取任务状态("任务ID")` | 返回 0~3 整数（0 未激活 / 1 待接取 / 2 进行中 / 3 已完成） |
-| M-4 | 图内 `获取任务目标描述("任务ID")` | 返回目标描述文本（非空） |
-| M-5 | 图内 `接取任务("任务ID")` | 待接取任务返回 `true`；非待接取返回 `false` |
-| M-6 | 图内 `任务进度("任务ID")`；`任务目标值("任务ID")` | 进行中任务进度 < 目标值；完成后相等 |
-| M-7 | 图内 `是否待接取/进行中/已完成("任务ID")` | 与 `获取任务状态` 结果互斥一致 |
-| M-8 | 图内 `获取达成结局("任务ID")` | 未完成返回空；完成返回结局 ID |
+| M-1 | `GetVisibleMissionCount()` | 返回当前开放可见任务数（≥0） |
+| M-2 | `HasMission("任务ID")` | 已载入任务返回 `true`；未知 ID 返回 `false` |
+| M-3 | `GetMissionState("任务ID")` | 返回 0~3 整数（0 未激活 / 1 待接取 / 2 进行中 / 3 已完成） |
+| M-4 | `GetObjective("任务ID")` | 返回目标描述文本（非空） |
+| M-5 | `AcceptMission("任务ID")` | 待接取任务返回 `true`；非待接取返回 `false` |
+| M-6 | `GetProgress("任务ID")`；`GetTarget("任务ID")` | 进行中任务进度 < 目标值；完成后相等 |
+| M-7 | `IsAvailable("任务ID")`；`IsInProgress("任务ID")`；`IsCompleted("任务ID")` | 与 `GetMissionState` 结果互斥一致 |
+| M-8 | `GetCompletedEnding("任务ID")` | 未完成返回空；完成返回结局 ID |
 
 ### 3.8 CombatApi —— 战斗（出航 `ShipTest_Map`）
 
 | # | 操作 | 预期结果 |
 |---|---|---|
-| C-1 | 图内 `雷达接触数量()`；`雷达是否启用()` | 返回接触数（≥0）与雷达启用状态 |
-| C-2 | 图内 `触发立即扫描()` | 冷却就绪返回 `true`，雷达接触数可能增加 |
-| C-3 | 图内 `机炮冷却进度()`；`护盾能量比例()` | 返回 0~1 浮点（无对应模块返回 0） |
-| C-4 | 图内 `开火()` | 有存活机炮返回 `true`；发射弹丸可见 |
-| C-5 | 图内 `设置开火开关(false)` → `开火()` | 返回 `true` 但不再发射（开关生效） |
-| C-6 | 图内 `钩爪状态()`；`钩爪操作进度()`；`钩爪是否操作中()` | 返回状态文本 / 0~1 进度 / `bool`；靠近残骸时钩爪自动工作 |
-| C-7 | 图内 `设置雷达开关(false)` → `雷达是否启用()` | 返回 `false`（开关生效） |
+| C-1 | `GetRadarContactCount()`；`IsRadarEnabled()` | 返回接触数（≥0）与雷达启用状态 |
+| C-2 | `TriggerImmediateScan()` | 冷却就绪返回 `true`，雷达接触数可能增加 |
+| C-3 | `GetCannonCooldown01()`；`GetShieldCharge01()` | 返回 0~1 浮点（无对应模块返回 0） |
+| C-4 | `TryFire()` | 有存活机炮返回 `true`；发射弹丸可见 |
+| C-5 | `SetCombatEnabled(false)` → `TryFire()` | 返回 `true` 但不再发射（开关生效） |
+| C-6 | `GetGrappleStatus()`；`GetGrappleProgress01()`；`IsGrappleOperating()` | 返回状态文本 / 0~1 进度 / `bool`；靠近残骸时钩爪自动工作 |
+| C-7 | `SetRadarEnabled(false)` → `IsRadarEnabled()` | 返回 `false`（开关生效） |
 
 ### 3.9 NavigationApi —— 移动导航（出航 `ShipTest_Map`）
 
 | # | 操作 | 预期结果 |
 |---|---|---|
-| N-1 | 图内 `手动移动指令((0,1,0),0)` 后 `当前速度向量()` / `前向速度()` | 移动指令生效；前向速度 > 0（飞船前进） |
-| N-2 | 图内 `手动移动指令((0,0,0),1)` 后 `转向速度()` | 转向速度非 0（飞船转向） |
-| N-3 | 图内 `停止移动()` 后 `前向速度()` | 速度趋近 0（停止生效） |
-| N-4 | 图内 `是否超载()` | 返回 `bool`（与载荷/容量比较一致） |
-| N-5 | 图内 `当前速度向量()` | 返回 Vector3（x 侧向、y 前后） |
+| N-1 | `SetManualInput((0, 1, 0), 0)` 后 `GetVelocity()` / `GetForwardSpeed()` | 移动指令生效；前向速度 > 0（飞船前进） |
+| N-2 | `SetManualInput((0, 0, 0), 1)` 后 `GetAngularVelocity()` | 转向速度非 0（飞船转向） |
+| N-3 | `Stop()` 后 `GetForwardSpeed()` | 速度趋近 0（停止生效） |
+| N-4 | `IsOverloaded()` | 返回 `bool`（与载荷/容量比较一致） |
+| N-5 | `GetVelocity()` | 返回 Vector3（x 侧向、y 前后） |
 
 ### 3.10 ResourcesApi —— 资源消耗（出航 `ShipTest_Map`）
 
 | # | 操作 | 预期结果 |
 |---|---|---|
-| R-1 | 图内 `当前燃料()`；`下次燃料消耗()` | 返回货舱燃料量与下次步长消耗（>0） |
-| R-2 | 图内 `当前食物()`；`下次食物消耗()` | 返回食物量与每日消耗 |
-| R-3 | 图内 `当前弹药()` | 返回弹药量（≥0） |
-| R-4 | 图内 `累计航程()`；`距下次结算距离()` | 移动后累计航程增加；距离 > 0 |
+| R-1 | `GetCurrentFuel()`；`GetNextFuelCost()` | 返回货舱燃料量与下次步长消耗（>0） |
+| R-2 | `GetCurrentFood()`；`GetNextFoodCost()` | 返回食物量与每日消耗 |
+| R-3 | `GetCurrentAmmunition()` | 返回弹药量（≥0） |
+| R-4 | `GetAccumulatedDistance()`；`GetDistanceToNextSettlement()` | 移动后累计航程增加；距离 > 0 |
 
 ### 3.11 WorldApi —— 世界探索（出航 `ShipTest_Map`）
 
 | # | 操作 | 预期结果 |
 |---|---|---|
-| WO-1 | 图内 `小行星数量()`；`残骸数量()`；`敌舰数量()` | 与世界生成一致（≥0） |
-| WO-2 | 图内 `交战敌舰数量()`；`发现玩家的敌舰数()` | 与敌舰实际行为一致（发现玩家 → 交战） |
-| WO-3 | 图内 `残骸货物("宝藏")` | 返回全部残骸携带宝藏总量（≥0） |
-| WO-4 | 图内 `本轮已过天数()`；`当日进度()` | 与 UI 天数/进度条一致 |
-| WO-5 | 图内 `结算目标()`；`是否新发现星球()` | 结算流程中返回目标名与是否新发现 |
+| WO-1 | `GetAsteroidCount()`；`GetSalvageCount()`；`GetEnemyCount()` | 与世界生成一致（≥0） |
+| WO-2 | `GetBattlingEnemyCount()`；`GetEnemiesSeeingPlayer()` | 与敌舰实际行为一致（发现玩家 → 交战） |
+| WO-3 | `GetSalvageCargoTotal("Treasure")` | 返回全部残骸携带宝藏总量（≥0） |
+| WO-4 | `GetDayIndex()`；`GetDayProgress01()` | 与 UI 天数/进度条一致 |
+| WO-5 | `GetSettlementDestination()`；`GetSettlementDiscoveredNewPlanet()` | 结算流程中返回目标名与是否新发现 |
 
 ---
 
@@ -197,11 +197,11 @@
 
 | # | 事件 | 触发方式 | 预期结果 |
 |---|---|---|---|
-| E-1 | `OnCoinsChanged` | 图内 `增加金币(10)` 或 UI 购买 | 事件节点唤醒，后继日志输出 |
-| E-2 | `OnCargoChanged` | 图内 `添加货物("燃料",1)` | 事件节点唤醒 |
+| E-1 | `OnCoinsChanged` | `AddCoins(10)` 或 UI 购买 | 事件节点唤醒，后继日志输出 |
+| E-2 | `OnCargoChanged` | `AddCargo("Fuel", 1)` | 事件节点唤醒 |
 | E-3 | `OnDayEnded` | 等待天数推进（或流程结算触发） | 事件节点唤醒 |
-| E-4 | `OnShipDestroyed` | 图内 `摧毁玩家船("QA")` | 事件节点唤醒 |
-| E-5 | `OnMissionStateChanged` / `OnMissionEnded` | 图内 `接取任务("任务ID")` | 事件节点唤醒 |
+| E-4 | `OnShipDestroyed` | `DestroyPlayerShip("QA")` | 事件节点唤醒 |
+| E-5 | `OnMissionStateChanged` / `OnMissionEnded` | `AcceptMission("任务ID")` | 事件节点唤醒 |
 | E-6 | `OnWorkshopHullSaved` 等 | 休整站保存船体 | 事件节点唤醒 |
 
 > 事件名必须与「事件桥映射」表完全一致（含大小写）。若图内等待节点不被唤醒，先检查 `GameApiBootstrap` 是否在场景且事件源已接线。
