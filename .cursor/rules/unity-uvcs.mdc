@@ -1,0 +1,26 @@
+---
+description: >-
+  Unity project code uses Unity Version Control (uvcs), not git. Never run git
+  commands against the Unity project; use the uvcs MCP for version control.
+  | Unity 工程代码使用 uvcs 管理版本，不使用 git；禁止对 Unity 工程执行 git 命令
+alwaysApply: true
+---
+
+# Unity 工程代码统一使用 uvcs，不使用 git
+
+Unity 工程代码（`d:\Unity\Spaceship`）由 **Unity Version Control（uvcs）** 管理版本，**不是** git 仓库。
+
+## 默认行为
+
+- 对 Unity 工程代码执行版本控制操作（查看状态、暂存、提交、历史、推送等）时，一律通过 **uvcs MCP** 完成
+- 不要对 Unity 工程执行任何 git 命令（如 `git status`、`git add`、`git commit`、`git log`、`git push` 等），否则会直接失败或产生误导
+- 遇到 `.plastic` 目录或 uvcs 相关文件的工程，先认定为 Unity Version Control 工程
+
+## 例外情况
+
+- 设计文档仓库（如 `d:\OneDrive\MyProjects\SpaceShip`）本身是 git 仓库，其中与 Unity 工程无关的文档、设计稿仍使用 git 管理
+
+## 注意事项
+
+- 操作前先确认目标目录归属：`d:\Unity\Spaceship` 属 uvcs，`d:\OneDrive\MyProjects\SpaceShip` 属 git
+- uvcs 操作返回结果或失败时，按实际返回内容处理，不要擅自改用 git 兜底

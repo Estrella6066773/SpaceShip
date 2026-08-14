@@ -199,6 +199,8 @@ flowchart TB
     class CCS,CP,SSV,BRB,SCC,SMC,AEX,RSN con;
 ```
 
+> **玩家船体双轨（2026-08-13 确认）**：玩家在车间保存的船体格为**存档纯数据**（`HullBlueprintSaveData`：名称 + 模块布局 + 货物配置），直接序列化进 `SaveData → WarehouseSaveData → HullSlots`，不创建任何蓝图资产或 Prefab。内容侧 `ShipBlueprint` SO 与 `ShipWorkshopAssetExporter` 仅保留用于预配置初始飞船、敌舰、残骸生成等内容资产；车间编辑 / 删除 / 重命名船体格全部以存档数据为准。
+
 ---
 
 ## 五、任务 / 表现
@@ -272,16 +274,20 @@ flowchart TB
         MODINV["模块库存"]
         CGOINV["货物库存"]
         WHINV["仓库 / 货架库存"]
+        HULL["船体库 HullSlot[]<br/>（船体结构纯数据）"]
     end
 
     FC["SpaceshipGameFlowController<br/>失败时 / 结算时"]
     SNAP["ShipRuntimeSnapshot<br/>跨场景传递飞船状态"]
+    WE["ShipWorkshopEditingService<br/>车间保存 / 拖出船体格"]
 
     FC --> SAVE
     SAVE --> SNAP
+    WE --> HULL
+    HULL --> WE
 
     classDef s fill:#d1fae5,stroke:#059669,color:#064e3b;
-    class GOLD,QUEST,MODINV,CGOINV,WHINV s;
+    class GOLD,QUEST,MODINV,CGOINV,WHINV,HULL s;
 ```
 
 ---
