@@ -67,6 +67,10 @@ Scripts/Api/
     WorkshopApi.cs   车间
     FlowApi.cs       流程控制
     MissionApi.cs    任务查询 / 接取 / 进度 / 结局
+    CombatApi.cs     战斗：开火 / 护盾 / 钩爪 / 雷达
+    NavigationApi.cs 移动导航：速度 / 转向 / 手动指令
+    ResourcesApi.cs  资源消耗：燃料 / 食物 / 弹药 / 航程
+    WorldApi.cs      世界探索：小行星 / 残骸 / 敌舰 / 结算 / 天数
   Adapters/SequenceMap/             —— SequenceMap 适配层：扁平签名 + [SequenceMapApi] 转发
     SequenceMapGameApi.cs       存档 / 经济
     SequenceMapWarehouseApi.cs  仓库与库存
@@ -75,6 +79,10 @@ Scripts/Api/
     SequenceMapWorkshopApi.cs   车间
     SequenceMapFlowApi.cs       流程控制
     SequenceMapMissionApi.cs    任务
+    SequenceMapCombatApi.cs     战斗
+    SequenceMapNavigationApi.cs 移动导航
+    SequenceMapResourcesApi.cs  资源消耗
+    SequenceMapWorldApi.cs      世界探索
   Bootstrap/GameApiBootstrap.cs     —— 场景装配组件：注册服务 + 接线事件桥 + 注册反向桥
 ```
 
@@ -190,10 +198,10 @@ public sealed class GraphControlService : MonoBehaviour
 | 流程控制 | `FlowApi` | 状态机、进出模式、暂停、结算、失败 | P0 |
 | 任务 | `MissionApi` | 任务查询、接取、进度、结局 | P0 |
 | 事件桥 | `GameEventBridge` | 游戏事件 → SequenceMap 事件 | P0 |
-| 战斗 | `CombatApi` | 开火、护盾、钩爪、雷达、弹药 | P1 |
-| 移动/导航 | `NavigationApi` | 移动、转向、停止 | P1 |
-| 资源消耗 | `ResourcesApi` | 燃料/食物/弹药消耗与阈值 | P1 |
-| 世界/探索 | `WorldApi` | 目的地、残骸、小行星、结算信息 | P1 |
+| 战斗 | `CombatApi` | 开火、护盾、钩爪、雷达 | P1（已交付） |
+| 移动/导航 | `NavigationApi` | 速度、转向、手动移动指令 | P1（已交付） |
+| 资源消耗 | `ResourcesApi` | 燃料/食物/弹药当前量与下次消耗、航程 | P1（已交付） |
+| 世界/探索 | `WorldApi` | 小行星、残骸、敌舰、结算信息、天数 | P1（已交付） |
 
 ---
 
@@ -308,6 +316,70 @@ public sealed class GraphControlService : MonoBehaviour
 
 > 任务状态由 `MissionService` 承载（经 `MissionSystem` 装配），进度统计按 `GetEndingProgress` 口径：普通结局读任务级进度，独一结局读全局计数器。
 
+### 5.8 CombatApi —— 战斗
+
+> 战斗组件（`ShipCombatController` / `ShipShieldController` / `ShipGrappleController` / `ShipSensorModules`）挂在玩家飞船根对象上，经 `ShipSceneRegistry.PlayerShip` 解析；未装配返回默认值。
+
+| API | 签名 | 说明 |
+|---|---|---|
+| 开火 | `bool TryFire()` | 全部存活机炮向当前朝向齐射 |
+| 设置开火开关 | `bool SetCombatEnabled(bool enabled)` | 开关自动开火 |
+| 机炮冷却进度 | `float GetCannonCooldown01()` | 全部机炮最大冷却，1=冷却中 |
+| 护盾能量比例 | `float GetShieldCharge01()` | 存活护盾平均充能 0~1 |
+| 钩爪状态 | `string GetGrappleStatus()` | 闲置/拆卸中/抓取中/安装中/冷却中等 |
+| 钩爪操作进度 | `float GetGrappleProgress01()` | 0~1 |
+| 钩爪是否操作中 | `bool IsGrappleOperating()` | 状态判断 |
+| 雷达是否启用 | `bool IsRadarEnabled()` | 状态查询 |
+| 设置雷达开关 | `bool SetRadarEnabled(bool enabled)` | 雷达开关 |
+| 触发立即扫描 | `bool TriggerImmediateScan()` | 受冷却限制 |
+| 雷达接触数量 | `int GetRadarContactCount()` | 敌舰/残骸接触数 |
+
+### 5.9 NavigationApi —— 移动 / 导航
+
+> 运动控制器（`ShipMotionController`）挂在玩家飞船根对象上；手动指令会覆盖玩家输入，传 (0,0,0)/0 释放。
+
+| API | 签名 | 说明 |
+|---|---|---|
+| 当前速度向量 | `Vector3 GetVelocity()` | 局部坐标 x 侧向、y 前后 |
+| 前向速度 | `float GetForwardSpeed()` | 沿朝向的前进速度 |
+| 转向速度 | `float GetAngularVelocity()` | 角速度（度/秒） |
+| 是否超载 | `bool IsOverloaded()` | 载荷超过储存容量 |
+| 手动移动指令 | `bool SetManualInput(Vector3 move, float turn)` | move 局部方向、turn -1~1 |
+| 停止移动 | `bool Stop()` | 停止推进与转向 |
+
+### 5.10 ResourcesApi —— 资源消耗
+
+> 消耗管理器（`ShipFuelConsumptionManager` / `ShipFoodConsumptionManager` / `ShipAmmunitionConsumptionManager` / `ShipTravelDistanceTracker`）挂在玩家飞船根对象上。
+
+| API | 签名 | 说明 |
+|---|---|---|
+| 当前燃料 | `int GetCurrentFuel()` | 货舱可消耗燃料 |
+| 下次燃料消耗 | `int GetNextFuelCost()` | 每前进一个燃料步长的消耗 |
+| 当前食物 | `int GetCurrentFood()` | 货舱可消耗食物 |
+| 下次食物消耗 | `int GetNextFoodCost()` | 每度过一天的消耗 |
+| 当前弹药 | `int GetCurrentAmmunition()` | 货舱可消耗弹药 |
+| 累计航程 | `float GetAccumulatedDistance()` | 本轮累计里程（米） |
+| 距下次结算距离 | `float GetDistanceToNextSettlement()` | 距下一个燃料结算点 |
+
+### 5.11 WorldApi —— 世界 / 探索
+
+> 世界地图与时间导演为场景装配实例（经 `GameServiceLocator` / 场景查找解析）；敌人与残骸经 `ShipSceneRegistry` 查询。
+
+| API | 签名 | 说明 |
+|---|---|---|
+| 小行星数量 | `int GetAsteroidCount()` | 出航世界小行星数 |
+| 残骸数量 | `int GetSalvageCount()` | 名册登记残骸数 |
+| 敌舰数量 | `int GetEnemyCount()` | 名册登记敌舰数 |
+| 交战敌舰数量 | `int GetBattlingEnemyCount()` | 处于战斗阶段的敌舰数 |
+| 发现玩家的敌舰数 | `int GetEnemiesSeeingPlayer()` | 已发现玩家的敌舰数 |
+| 残骸货物 | `int GetSalvageCargoTotal(string category)` | 全部残骸指定类别货物总量 |
+| 本轮已过天数 | `int GetDayIndex()` | 本轮已过天数（当日未计入） |
+| 当日进度 | `float GetDayProgress01()` | 0~1 |
+| 结算目标 | `string GetSettlementDestination()` | 当前结算目标星球 |
+| 是否新发现星球 | `bool GetSettlementDiscoveredNewPlanet()` | 结算标记查询 |
+
+> P1 各适配层（`SequenceMapCombatApi` / `SequenceMapNavigationApi` / `SequenceMapResourcesApi` / `SequenceMapWorldApi`）按「适配层签名约束」将枚举参数（如货物类别）扁平化为字符串并经 `ApiEnum` 解析后转发核心层。
+
 ---
 
 ## 6. 事件桥映射（GameEventBridge）
@@ -347,19 +419,19 @@ public sealed class GraphControlService : MonoBehaviour
 4. **第四步（已交付）**：`MissionApi`（任务查询 / 接取 / 进度 / 结局）落地，任务系统接入 API 框架
 5. **第五步**：刷新 SequenceMap API 面板，验证适配层 API 全部可发现、可拖入图、可生成
 6. **第六步**：建流程图样例（出航主循环 / 任务推进），生成代码，PlayMode 测试
-7. **第七步（系统演进）**：战斗 / 移动 / 资源 / 世界 API（P1）；游戏系统间命令/查询、UI 与自动化测试逐步改走核心能力层，向「行为可经 API 完成」演进
+7. **第七步（已交付）**：P1 API 覆盖 `CombatApi`（开火/护盾/钩爪/雷达）+ `NavigationApi`（速度/转向/手动指令）+ `ResourcesApi`（燃料/食物/弹药/航程）+ `WorldApi`（小行星/残骸/敌舰/结算/天数），`GameApiBootstrap` 注册世界系统服务；后续游戏系统间命令/查询、UI 与自动化测试逐步改走核心能力层，向「行为可经 API 完成」演进
 
 ---
 
 ## 8. 验收标准
 
-- [ ] `Spaceship.Game` 程序集引用 SequenceMap 后编译无错
-- [ ] 核心能力层（`Modules`）无 `Spaceship.Framework.SequenceMap` 引用，签名类型化，任意 C# 代码可直接调用
-- [ ] 适配层（`Adapters/SequenceMap`）为每个核心方法提供扁平签名 + 完整中文元数据（displayName / description / example / threadSafety）
+- [x] `Spaceship.Game` 程序集引用 SequenceMap 后编译无错
+- [x] 核心能力层（`Modules`）无 `Spaceship.Framework.SequenceMap` 引用，签名类型化，任意 C# 代码可直接调用
+- [x] 适配层（`Adapters/SequenceMap`）为每个核心方法提供扁平签名 + 完整中文元数据（displayName / description / example / threadSafety）
 - [ ] SequenceMap API 面板出现「游戏/…」分类下的全部适配层 API
-- [ ] 每个适配方法返回类型符合生成器约束
-- [ ] 事件桥事件名与图内 `OnXXX` 节点完全一致
-- [ ] `GraphControlService` 可激活/停止图、投递事件、读写变量，且经 Locator 可解析
-- [ ] `MissionApi` 可查询/接取/推进任务，任务状态与存档一致
+- [x] 每个适配方法返回类型符合生成器约束
+- [x] 事件桥事件名与图内 `OnXXX` 节点完全一致
+- [x] `GraphControlService` 可激活/停止图、投递事件、读写变量，且经 Locator 可解析
+- [x] `MissionApi` 可查询/接取/推进任务，任务状态与存档一致
 - [ ] 流程图调用适配 API 后成功生成 C# 且编译通过
 - [ ] PlayMode 测试覆盖：命令成功 / 失败分支、事件等待、服务未装配兜底
