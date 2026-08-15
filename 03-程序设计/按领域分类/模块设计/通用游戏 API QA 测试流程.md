@@ -317,6 +317,22 @@
 [API闭环测试] PASS：API→图→API 闭环完整跑通。before=… 图内before=… 图内after=… 当前=… progress=…
 ```
 
+**实测验证记录（2026-08-14）**：
+
+```
+[API闭环测试] PASS：API→图→API 闭环完整跑通。before=15 图内before=15 图内after=115 当前=115 progress=1
+```
+
+- `before=15` 与 `图内before=15` 一致：图内节点读到的金币与游戏代码读取值完全相同（API 数据进入图）；
+- `图内after=115`：图内 `AddCoins(100)` 生效，金币 15 → 115；
+- `当前=115`：图执行完毕后游戏代码再次 `GetCoins()` 读到 115，与图内一致（图的副作用对游戏可见）；
+- `progress=1`：图内 `AccumulateGlobalProgress` 写入的全局进度对游戏生效。
+
+配合本次跑通的关键修复（已合入工程）：
+- 代码生成器改为收集图中**全部** API 调用的命名空间（不限于协程 API），生成的 `QA_ApiSmapApi_FlowTest.cs` 自带 `using Spaceship.Api.Adapters.SequenceMap;`；
+- `SequenceMapGeneratedGraphBase` 每次激活前重置图变量、执行完成后**保留** Context，保证图内变量完成态可被外部读回、且多次执行互不残留；
+- `ApiSmapApiFlowTester` 在测试前把场景 Runner 显式注册进 `GraphControlService`，规避场景 Awake 时序导致的查找失败。
+
 **常见失败与排查**：
 
 | 现象 | 可能原因 | 排查步骤 |
