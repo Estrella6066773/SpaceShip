@@ -44,8 +44,12 @@ SequenceMap 通过以下机制消费游戏能力；其中**静态方法 API 由�
 - 枚举映射为 `string` / `int`；`Vector2` 映射为 `Vector3`
 - 线程安全一律标 `UnityObject`（游戏状态都在主线程）
 - 返回 `IEnumerator` 的方法自动成为异步动作节点
+- 异步协程内只允许 `yield return null`（或框架可感知的 CustomYieldInstruction），禁止 `WaitForSeconds`
+- 图内可能「正常失败」的命令（冷却、未命中）适配层宜返回 `void`，避免 bool false 无失败边时停图
 
 > 核心能力层**不受此约束**：它使用类型化签名（真枚举如 `CargoCategory` / `ModuleKind` / `MissionState`），扁平化翻译发生在适配层（`ApiEnum` 负责字符串 → 枚举解析）。
+
+**同步 / 异步怎么写**：全库规范见 [`API同步与异步规范.md`](../规范与标准/API同步与异步规范.md)。状态等 `OnCustomEvent` / `OnXXX`；持续过程才用 `IEnumerator`（如 `MoveTo`）。
 
 ---
 
@@ -58,6 +62,7 @@ Scripts/Api/
   Locator/ApiServices.cs            —— 服务解析辅助（Locator 优先，场景查找兜底）
   Bridge/GameEventBridge.cs         —— 游戏事件源 → SequenceMap 绑定事件转发
   Bridge/GraphControlService.cs     —— 反向桥：游戏代码 → 流程图的主动控制
+  Bridge/EnemyRadarContactEventBridge.cs —— 本舰雷达联络边沿 → Runner 自定义事件
   Modules/                          —— 核心能力层：类型化签名，无 SequenceMap 依赖
     ApiEnum.cs       枚举字符串解析辅助（供适配层使用）
     GameApi.cs       存档 / 经济 / 全局进度
@@ -71,6 +76,7 @@ Scripts/Api/
     NavigationApi.cs 移动导航：速度 / 转向 / 手动指令
     ResourcesApi.cs  资源消耗：燃料 / 食物 / 弹药 / 航程
     WorldApi.cs      世界探索：小行星 / 残骸 / 敌舰 / 结算 / 天数
+    EnemyApi.cs      非玩家单位：感知 / 行动（过程协程 MoveTo）
   Adapters/SequenceMap/             —— SequenceMap 适配层：扁平签名 + [SequenceMapApi] 转发
     SequenceMapGameApi.cs       存档 / 经济
     SequenceMapWarehouseApi.cs  仓库与库存
