@@ -76,7 +76,7 @@ Scripts/Api/
     NavigationApi.cs 移动导航：速度 / 转向 / 手动指令
     ResourcesApi.cs  资源消耗：燃料 / 食物 / 弹药 / 航程
     WorldApi.cs      世界探索：小行星 / 残骸 / 敌舰 / 结算 / 天数
-    EnemyApi.cs      非玩家单位：感知 / 行动（过程协程 MoveTo）
+    EnemyApi.cs      非玩家单位：感知 / 行动（过程协程 MoveTo、ChaseKnownPlayer）
   Adapters/SequenceMap/             —— SequenceMap 适配层：扁平签名 + [SequenceMapApi] 转发
     SequenceMapGameApi.cs       存档 / 经济
     SequenceMapWarehouseApi.cs  仓库与库存
