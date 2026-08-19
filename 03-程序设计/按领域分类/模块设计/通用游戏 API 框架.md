@@ -62,7 +62,7 @@ Scripts/Api/
   Locator/ApiServices.cs            —— 服务解析辅助（Locator 优先，场景查找兜底）
   Bridge/GameEventBridge.cs         —— 游戏事件源 → SequenceMap 绑定事件转发
   Bridge/GraphControlService.cs     —— 反向桥：游戏代码 → 流程图的主动控制
-  Bridge/EnemyRadarContactEventBridge.cs —— 本舰雷达联络边沿 → Runner 自定义事件
+  Bridge/NonPlayerUnitRadarContactEventBridge.cs —— 本舰雷达联络边沿 → Runner 自定义事件
   Modules/                          —— 核心能力层：类型化签名，无 SequenceMap 依赖
     ApiEnum.cs       枚举字符串解析辅助（供适配层使用）
     GameApi.cs       存档 / 经济 / 全局进度
@@ -75,8 +75,8 @@ Scripts/Api/
     CombatApi.cs     战斗：开火 / 护盾 / 钩爪 / 雷达
     NavigationApi.cs 移动导航：速度 / 转向 / 手动指令
     ResourcesApi.cs  资源消耗：燃料 / 食物 / 弹药 / 航程
-    WorldApi.cs      世界探索：小行星 / 残骸 / 敌舰 / 结算 / 天数
-    EnemyApi.cs      非玩家单位：感知 / 行动（过程协程 MoveTo、ChaseKnownPlayer）
+    WorldApi.cs      世界探索：小行星 / 残骸 / 非玩家单位 / 结算 / 天数
+    NonPlayerUnitApi.cs      非玩家单位：感知 / 行动（过程协程 MoveTo、ChaseKnownPlayer）
   Adapters/SequenceMap/             —— SequenceMap 适配层：扁平签名 + [SequenceMapApi] 转发
     SequenceMapGameApi.cs       存档 / 经济
     SequenceMapWarehouseApi.cs  仓库与库存
@@ -207,7 +207,7 @@ public sealed class GraphControlService : MonoBehaviour
 | 战斗 | `CombatApi` | 开火、护盾、钩爪、雷达 | P1（已交付） |
 | 移动/导航 | `NavigationApi` | 速度、转向、手动移动指令 | P1（已交付） |
 | 资源消耗 | `ResourcesApi` | 燃料/食物/弹药当前量与下次消耗、航程 | P1（已交付） |
-| 世界/探索 | `WorldApi` | 小行星、残骸、敌舰、结算信息、天数 | P1（已交付） |
+| 世界/探索 | `WorldApi` | 小行星、残骸、非玩家单位、结算信息、天数 | P1（已交付） |
 
 ---
 
@@ -338,7 +338,7 @@ public sealed class GraphControlService : MonoBehaviour
 | 雷达是否启用 | `bool IsRadarEnabled()` | 状态查询 |
 | 设置雷达开关 | `bool SetRadarEnabled(bool enabled)` | 雷达开关 |
 | 触发立即扫描 | `bool TriggerImmediateScan()` | 受冷却限制 |
-| 雷达接触数量 | `int GetRadarContactCount()` | 敌舰/残骸接触数 |
+| 雷达接触数量 | `int GetRadarContactCount()` | 非玩家单位/残骸接触数 |
 
 ### 5.9 NavigationApi —— 移动 / 导航
 
@@ -369,15 +369,15 @@ public sealed class GraphControlService : MonoBehaviour
 
 ### 5.11 WorldApi —— 世界 / 探索
 
-> 世界地图与时间导演为场景装配实例（经 `GameServiceLocator` / 场景查找解析）；敌人与残骸经 `ShipSceneRegistry` 查询。
+> 世界地图与时间导演为场景装配实例（经 `GameServiceLocator` / 场景查找解析）；非玩家单位与残骸经 `ShipSceneRegistry` 查询。
 
 | API | 签名 | 说明 |
 |---|---|---|
 | 小行星数量 | `int GetAsteroidCount()` | 出航世界小行星数 |
 | 残骸数量 | `int GetSalvageCount()` | 名册登记残骸数 |
-| 敌舰数量 | `int GetEnemyCount()` | 名册登记敌舰数 |
-| 交战敌舰数量 | `int GetBattlingEnemyCount()` | 处于战斗阶段的敌舰数 |
-| 发现玩家的敌舰数 | `int GetEnemiesSeeingPlayer()` | 已发现玩家的敌舰数 |
+| 非玩家单位数量 | `int GetNonPlayerUnitCount()` | 名册登记非玩家单位数 |
+| 交战非玩家单位数量 | `int GetBattlingNonPlayerUnitCount()` | 处于战斗阶段的非玩家单位数 |
+| 发现玩家的非玩家单位数 | `int GetNonPlayerUnitsSeeingPlayer()` | 已发现玩家的非玩家单位数 |
 | 残骸货物 | `int GetSalvageCargoTotal(string category)` | 全部残骸指定类别货物总量 |
 | 本轮已过天数 | `int GetDayIndex()` | 本轮已过天数（当日未计入） |
 | 当日进度 | `float GetDayProgress01()` | 0~1 |
@@ -425,7 +425,7 @@ public sealed class GraphControlService : MonoBehaviour
 4. **第四步（已交付）**：`MissionApi`（任务查询 / 接取 / 进度 / 结局）落地，任务系统接入 API 框架
 5. **第五步**：刷新 SequenceMap API 面板，验证适配层 API 全部可发现、可拖入图、可生成
 6. **第六步**：建流程图样例（出航主循环 / 任务推进），生成代码，PlayMode 测试
-7. **第七步（已交付）**：P1 API 覆盖 `CombatApi`（开火/护盾/钩爪/雷达）+ `NavigationApi`（速度/转向/手动指令）+ `ResourcesApi`（燃料/食物/弹药/航程）+ `WorldApi`（小行星/残骸/敌舰/结算/天数），`GameApiBootstrap` 注册世界系统服务；后续游戏系统间命令/查询、UI 与自动化测试逐步改走核心能力层，向「行为可经 API 完成」演进
+7. **第七步（已交付）**：P1 API 覆盖 `CombatApi`（开火/护盾/钩爪/雷达）+ `NavigationApi`（速度/转向/手动指令）+ `ResourcesApi`（燃料/食物/弹药/航程）+ `WorldApi`（小行星/残骸/非玩家单位/结算/天数），`GameApiBootstrap` 注册世界系统服务；后续游戏系统间命令/查询、UI 与自动化测试逐步改走核心能力层，向「行为可经 API 完成」演进
 8. **第八步（已交付）**：QA 验证闭环——分模块验收文档（`通用游戏 API QA 测试流程.md`）定义「前置条件 → 场景内路径 A（SequenceMap 图内调用）+ 路径 B（C# 直接调用）→ 事件桥 / 反向桥 → 验收清单」的逐步验证流程；运行时侧提供 `QAApiVerifier`（`Scripts/Api/Tools/`，挂场景空物体后 Inspector 右键「验证-全部」等菜单项，直接调用核心能力层并输出 `[QA]` 前缀的 PASS / FAIL / SKIP 日志），破坏性用例默认关闭
 
 ---

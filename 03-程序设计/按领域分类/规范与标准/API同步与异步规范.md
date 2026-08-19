@@ -3,7 +3,7 @@
 > 作者：AI 规划 | 创建日期：2026-08-18 | 状态：现行  
 > 适用范围：`Scripts/Api` 核心能力层 + SequenceMap 适配层。雷达只是样例。  
 > 上游：会议约定 + SequenceMap 内置说明书（`api-library.md` / `create-api-node-flow.md` / 用户指南「事件」章）  
-> 下游：`EnemyRadarContactEventBridge`、`GameEventBridge`、各 `*Api` 的查询 / 命令 / `MoveTo`
+> 下游：`NonPlayerUnitRadarContactEventBridge`、`GameEventBridge`、各 `*Api` 的查询 / 命令 / `MoveTo`
 
 写 API 先对照本模板分类。**不要给瞬时查询配 `WaitUntil` 协程**；状态等待走框架已有的事件节点。
 
@@ -54,7 +54,7 @@
 ### 4.1 瞬时查询
 
 ```csharp
-public static bool HasRadarContact(EnemyShipController self)
+public static bool HasRadarContact(NonPlayerUnitController self)
     => self != null && self.TryGetRadarPlayerPosition(out _);
 ```
 
@@ -90,7 +90,7 @@ public static IEnumerator MoveTo(self, target, allowForward, arriveDistance, tim
 
 | 模块 | 同步 | 异步（说明书路径） | 不要做的 |
 |---|---|---|---|
-| EnemyApi | `HasRadarContact` / `CanSeePlayer` / `KnowsPlayer` / `IsFartherThan` / `MoveToward` / `ApproachIfFarther` | 本舰 `RadarContactChanged`、`PlayerVisibleChanged`；过程用带 `durationSeconds` 的 `MoveTo`、`ChaseKnownPlayer`、持续 `MoveToward` 等 | 不要 `WaitUntilRadarContact`；不要用不限时协程；不要用 `MoveTo` 追移动中的玩家；不要用 `0` 表示省略运动期望 |
+| NonPlayerUnitApi | `HasRadarContact` / `CanSeePlayer` / `KnowsPlayer` / `IsFartherThan` / `MoveToward` / `ApproachIfFarther` | 本舰 `RadarContactChanged`、`PlayerVisibleChanged`；过程用带 `durationSeconds` 的 `MoveTo`、`ChaseKnownPlayer`、持续 `MoveToward` 等 | 不要 `WaitUntilRadarContact`；不要用不限时协程；不要用 `MoveTo` 追移动中的玩家；不要用 `0` 表示省略运动期望 |
 | CombatApi | `IsCannonReady` / `IsGrappleOperating` / `GetRadarContactCount` | 暂无独立边沿；需要再按需接线，不要先造 WaitUntil | |
 | FlowApi | `GetGameState` / `WaitingForSettlementConfirm` | `OnGameStateChanged` / `OnSettlementPending` | 不要 WaitUntilGameState |
 | MissionApi | `GetMissionState` / `IsCompleted` | `OnMissionStateChanged` / `OnMissionEnded` | |

@@ -2,10 +2,10 @@
 name: work-for-sm
 description: >-
   Exposes SequenceMap-composable game APIs for SpaceShip planners: primitives
-  not full AI, three-layer EnemyApi/SequenceMapEnemyApi, sync vs coroutine vs
+  not full AI, three-layer NonPlayerUnitApi/SequenceMapNonPlayerUnitApi, sync vs coroutine vs
   event, void vs bool, Inspector plus node parameters, docs and QA. Use when
   the user says /work-for-sm, 给 SequenceMap 暴露 API, 供策划配置, 基本行为原语,
-  行为树节点, SequenceMapEnemyApi, or asks to add enemy/ship capabilities that
+  行为树节点, SequenceMapNonPlayerUnitApi, or asks to add non-player-unit/ship capabilities that
   SequenceMap graphs will compose.
 ---
 
@@ -17,7 +17,7 @@ description: >-
 
 1. `03-程序设计/按领域分类/规范与标准/API同步与异步规范.md`
 2. `03-程序设计/按领域分类/模块设计/通用游戏 API 框架.md`
-3. 相关领域文档（敌人：`非玩家单位行为树.md`）
+3. 相关领域文档（非玩家单位：`非玩家单位行为树.md`）
 4. 现有适配层：`d:\Unity\Spaceship\Assets\Scripts\Api\Adapters\SequenceMap\`
 
 框架说明书：`d:\Unity\Spaceship\Assets\Framework\SequenceMap\document\04-api-and-generation\create-api-node-flow.md`
@@ -66,7 +66,7 @@ description: >-
 图节点 [SequenceMapApi]
   → SequenceMapXxxApi（GameObject self，扁平签名）
   → XxxApi（类型化，不引用 SequenceMap）
-  → 运行时适配器（如 EnemyShipController）
+  → 运行时适配器（如 NonPlayerUnitController）
 ```
 
 - 适配层 `Resolve(self)` 取组件；空引用返回默认值 / no-op，不抛异常。
@@ -107,7 +107,7 @@ description: >-
 
 ## 验收
 
-- 策划能只改图和参数拼出逻辑，不必再等程序加「一种敌人 AI」
+- 策划能只改图和参数拼出逻辑，不必再等程序加「一种非玩家单位 AI」
 - 新 API 出现在 SequenceMap 面板对应分类
 - 正常未出弹、未感知等不会因 bool false 停图
 - Console 无新的编译错误

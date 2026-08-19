@@ -66,7 +66,7 @@ flowchart TB
         A4["ShipSensorModules"]
         A5["SpaceshipWorldMap"]
         A6["SalvageGenerator"]
-        A7["EnemyShipController"]
+        A7["NonPlayerUnitController"]
     end
 
     subgraph C2["消耗管理"]
@@ -199,7 +199,7 @@ flowchart TB
     class CCS,CP,SSV,BRB,SCC,SMC,AEX,RSN con;
 ```
 
-> **玩家船体双轨（2026-08-13 确认）**：玩家在车间保存的船体格为**存档纯数据**（`HullBlueprintSaveData`：名称 + 模块布局 + 货物配置），直接序列化进 `SaveData → WarehouseSaveData → HullSlots`，不创建任何蓝图资产或 Prefab。内容侧 `ShipBlueprint` SO 与 `ShipWorkshopAssetExporter` 仅保留用于预配置初始飞船、敌舰、残骸生成等内容资产；车间编辑 / 删除 / 重命名船体格全部以存档数据为准。
+> **玩家船体双轨（2026-08-13 确认）**：玩家在车间保存的船体格为**存档纯数据**（`HullBlueprintSaveData`：名称 + 模块布局 + 货物配置），直接序列化进 `SaveData → WarehouseSaveData → HullSlots`，不创建任何蓝图资产或 Prefab。内容侧 `ShipBlueprint` SO 与 `ShipWorkshopAssetExporter` 仅保留用于预配置初始飞船、非玩家单位、残骸生成等内容资产；车间编辑 / 删除 / 重命名船体格全部以存档数据为准。
 
 ---
 

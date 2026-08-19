@@ -181,8 +181,8 @@
 
 | # | 操作 | 预期结果 |
 |---|---|---|
-| WO-1 | `GetAsteroidCount()`；`GetSalvageCount()`；`GetEnemyCount()` | 与世界生成一致（≥0） |
-| WO-2 | `GetBattlingEnemyCount()`；`GetEnemiesSeeingPlayer()` | 与敌舰实际行为一致（发现玩家 → 交战） |
+| WO-1 | `GetAsteroidCount()`；`GetSalvageCount()`；`GetNonPlayerUnitCount()` | 与世界生成一致（≥0） |
+| WO-2 | `GetBattlingNonPlayerUnitCount()`；`GetNonPlayerUnitsSeeingPlayer()` | 与非玩家单位实际行为一致（发现玩家 → 交战） |
 | WO-3 | `GetSalvageCargoTotal("Treasure")` | 返回全部残骸携带宝藏总量（≥0） |
 | WO-4 | `GetDayIndex()`；`GetDayProgress01()` | 与 UI 天数/进度条一致 |
 | WO-5 | `GetSettlementDestination()`；`GetSettlementDiscoveredNewPlanet()` | 结算流程中返回目标名与是否新发现 |

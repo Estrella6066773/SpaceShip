@@ -169,7 +169,7 @@ SpaceshipGameConfiguration (顶层总配置)
 | `grappleHalfAngle` | `PlayerShipSettings` | `ModuleDefinition.Grapple` |
 | `fuelPer100Meters`（模块层） | `ModuleDefinition` | 删除（统一由 `ShipResourceConsumptionConfig` 控制） |
 | `turnSpeedBonus` | `ModuleDefinition` | 删除（Thruster 速度统一为 `forwardSpeedBonus`） |
-| `EnemyRadarIntervalMin/Max` | `WorldRules` | 删除（敌舰雷达由传感器系统自行管理） |
+| `EnemyRadarIntervalMin/Max` | `WorldRules` | 删除（非玩家单位雷达由传感器系统自行管理） |
 | `foodPerDay` | `WorldRules` | `ShipResourceConsumptionConfig` |
 | `ammunitionPerShot` | `ShipResourceConsumptionConfig` | `ModuleDefinition.Cannon` |
 | `description` | `CargoItemDefinition` | 删除（前端文本由本地化表管理） |
