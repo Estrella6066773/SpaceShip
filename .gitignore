@@ -1,22 +1,56 @@
-# 系统文件
+# Spaceship 忽略规则（git 侧）
+#
+# 本目录为独立 git 仓库（GitHub: Estrella6066773/SpaceShip，Est 分支）。
+# 与 Unity 工程根目录 .gitignore 保持同步；uvcs 侧规则见 ../../ignore.conf。
+#
+# 与 ignore.conf 的分工：
+#   .gitignore   → git：本仓库内应忽略的文件
+#   ignore.conf  → uvcs：Unity 工程 + 屏蔽 Docs/Est/.git
+
+# === 系统文件 ===
 .DS_Store
 Thumbs.db
 desktop.ini
+$RECYCLE.BIN/
 
-# 编辑器临时文件
+# === 编辑器临时文件 ===
 *.swp
 *.swo
 *~
 .idea/
 
-# 操作系统
-$RECYCLE.BIN/
-
-# 文档编辑临时文件
+# === 文档编辑临时文件 ===
 ~$*.docx
 ~$*.xlsx
 ~$*.pptx
 .~lock.*#
 
-# uvcs ˽�����ã���������������⣩
-.cursor/mcp.json
+# === 本地私有配置（不入 git 库）===
+# .cursor/ 位于 Unity 工程根目录，不在本仓库范围内，无需在此声明
+
+# === 防御性规则：防止 Unity 生成物误入文档库 ===
+Library/
+Temp/
+Obj/
+Build/
+Builds/
+Logs/
+UserSettings/
+MemoryCaptures/
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+*.apk
+*.aab
+*.app
+*.unitypackage

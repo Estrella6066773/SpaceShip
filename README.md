@@ -78,6 +78,7 @@
 ## 与程序代码库的关系
 
 - 程序代码位于 `d:\Unity\Spaceship`
+- Cursor 配置（`.cursor/rules`、`.cursor/skills`、`.cursor/mcp.json`）统一放在 Unity 工程根目录，请通过 `Spaceship.code-workspace` 多根工作区一并打开
 - 已有的开发规范、实现文档、审查记录保留在工程目录 `Assets/Documentation/` 中
 - 新增设计文档优先放置于本仓库相应板块
 - 逐步将工程内的历史设计文档迁移至本仓库并归入对应板块

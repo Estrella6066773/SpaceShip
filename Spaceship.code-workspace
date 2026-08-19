@@ -5,10 +5,6 @@
       "path": "."
     },
     {
-      "name": "📄 文档库: 主分支",
-      "path": "../SpaceShip.worktrees/主分支"
-    },
-    {
       "name": "🎮 程序",
       "path": "../../../Unity/Spaceship"
     }
