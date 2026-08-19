@@ -46,9 +46,9 @@ description: >-
 | 瞬时查询 | `bool` / `float` / `Vector3` | 原样转发 | 不要配 `WaitUntil` |
 | 瞬时命令 | C# 可 `bool` | 「正常未成功」用 **void** | bool false 无失败边会停图 |
 | 可变状态 | 保留同步查询 | 已满足先查；否则 `OnCustomEvent` | 不要为查询再写协程 |
-| 持续过程 | `IEnumerator`，外部 timeout | 协程节点 | 只 `yield return null`；禁止 `WaitForSeconds` / `Task` |
+| 持续过程 | `IEnumerator`，必填 `durationSeconds` | 协程节点 | 只 `yield return null`；禁止 `WaitForSeconds` / `Task` / 不限时 |
 
-协程：`self` 无效返回 `null`（failure）；跑完（含超时）走 success。
+协程：`self` 无效返回 `null`（failure）；跑完（含持续时间到）走 success。持续过程必须带 `durationSeconds`，禁止不限时；时间到即使目标未达成也结束，后续由图配置。
 
 ### 2. 原语，不要黑盒 AI
 
@@ -57,6 +57,8 @@ description: >-
 决策（看见还是雷达、远了靠近还是开火）留在图里。C# 可以做「远则靠近否则停」这种无分支语义的一拍，但不要内置巡逻/开火/三态。
 
 追**移动目标**不要用调用时拍死的 `MoveTo`；每帧重取位置（一拍循环或专用协程）。
+
+移动可选期望（角度 / 速度 / 角速度）用**另一组重载**，未指定项传 `UnspecifiedMotion()`，不要用 `0` 当省略。抵达只看距离。旧短签名必须保留，SequenceMap 按参数个数匹配。
 
 ### 3. 三层（以非玩家单位为例）
 

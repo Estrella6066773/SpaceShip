@@ -90,7 +90,7 @@ public static IEnumerator MoveTo(self, target, allowForward, arriveDistance, tim
 
 | 模块 | 同步 | 异步（说明书路径） | 不要做的 |
 |---|---|---|---|
-| EnemyApi | `HasRadarContact` / `CanSeePlayer` / `KnowsPlayer` / `IsFartherThan` / `MoveToward` / `ApproachIfFarther` | 本舰 `RadarContactChanged`、`PlayerVisibleChanged`；过程用 `MoveTo`、`ChaseKnownPlayer` | 不要 `WaitUntilRadarContact`；不要用 `MoveTo` 追移动中的玩家 |
+| EnemyApi | `HasRadarContact` / `CanSeePlayer` / `KnowsPlayer` / `IsFartherThan` / `MoveToward` / `ApproachIfFarther` | 本舰 `RadarContactChanged`、`PlayerVisibleChanged`；过程用带 `durationSeconds` 的 `MoveTo`、`ChaseKnownPlayer`、持续 `MoveToward` 等 | 不要 `WaitUntilRadarContact`；不要用不限时协程；不要用 `MoveTo` 追移动中的玩家；不要用 `0` 表示省略运动期望 |
 | CombatApi | `IsCannonReady` / `IsGrappleOperating` / `GetRadarContactCount` | 暂无独立边沿；需要再按需接线，不要先造 WaitUntil | |
 | FlowApi | `GetGameState` / `WaitingForSettlementConfirm` | `OnGameStateChanged` / `OnSettlementPending` | 不要 WaitUntilGameState |
 | MissionApi | `GetMissionState` / `IsCompleted` | `OnMissionStateChanged` / `OnMissionEnded` | |
