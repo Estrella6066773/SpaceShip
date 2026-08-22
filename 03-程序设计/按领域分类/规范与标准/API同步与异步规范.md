@@ -40,7 +40,7 @@
 
 | 范围 | 图节点 | C# 触发 | 参数 |
 |---|---|---|---|
-| 本物体局部（本舰雷达、本舰看见） | `OnCustomEvent == "RadarContactChanged"` | 该物体 `SequenceMapGraphRunner.TriggerEvent(name)` | **默认不传**；醒了再用同步查询看当前值 |
+| 本物体局部（本舰雷达、本舰看见） | `OnCustomEvent == "RadarContactChanged"` / `"PlayerVisibleChanged"` | 该物体 `SequenceMapGraphRunner.TriggerEvent(name)` | **默认不传**；醒了再用同步查询看当前值 |
 | 场景级事实（船毁、任务、结算） | `OnShipDestroyed` 等 | `TriggerBindEvent`（经 `GameEventBridge`） | 绑定事件不带整数 |
 
 `TriggerEvent` 唤不醒 `OnXXX`；`TriggerBindEvent` 唤不醒 `OnCustomEvent`。
@@ -62,22 +62,40 @@ public static bool HasRadarContact(NonPlayerUnitController self)
 
 ### 4.2 可变状态：查询 + 边沿事件（不要 WaitUntil）
 
-C# 在 LateUpdate / Tick 比较上次值，变化则 `runner.TriggerEvent("RadarContactChanged")`。
+C# 在 LateUpdate / Tick 比较上次值，变化则 `runner.TriggerEvent("RadarContactChanged")` 或 `"PlayerVisibleChanged"`（本舰桥已两条边沿都投）。**看见玩家与雷达联络同一套写法**：先同步查询，未满足再等 `OnCustomEvent`；禁止 `Wait(0.1)` 轮询 `CanSeePlayer` / `HasRadarContact`。
 
-图：
+图（雷达）：
 
 ```text
 HasRadarContact($self)          // 已经有联络则不必等
 → false → OnCustomEvent == "RadarContactChanged"
-→ HasRadarContact($self)        // 醒来后读当前值
+→ HasRadarContact($self)        // 醒来后读当前值（边沿双向，必须再查）
+```
+
+图（看见玩家，必须按本模板写）：
+
+```text
+CanSeePlayer($self)             // 已经看见则不必等
+→ false → OnCustomEvent == "PlayerVisibleChanged"
+→ CanSeePlayer($self)           // 醒来后读当前值（可能是刚看见，也可能是刚失去）
 ```
 
 ### 4.3 持续过程：协程 + 内置超时
 
-只 `yield return null`，禁止 `WaitForSeconds`。返回 `null` = 立即 failure；跑完 = success（含超时）。时间参数由外部传入。
+只 `yield return null`，禁止 `WaitForSeconds`。返回 `null` = 立即 failure。协程末帧由 `SequenceCoroutineApiGuard` 解读：`yield return true` → success，`yield return false` → failure；未 yield bool 则默认 success。`durationSeconds` 由图节点参数传入，**不是**运行时自动计算。
+
+协程分两类（非玩家单位 `MoveTo` 等为样例）：
+
+| 类型 | 完成条件 | 提前达成 | 时间到仍未达成 | 代表 API |
+|---|---|---|---|---|
+| **有完成条件** | 距离 / 感知等 | success（`yield return true`） | **failure**（`yield return false`） | `MoveTo`、`ApproachIfFarther`（持续）、`ChaseKnownPlayer` |
+| **纯时长** | 无（做满时长） | — | **success** | 持续 `MoveToward`、`RotateToward`、`FireCannon` |
+
+有完成条件的协程：**抵达只看平面距离**（如 `arriveDistance` / `keepDistance`），不要求朝向或速度已达成。
 
 ```csharp
-public static IEnumerator MoveTo(self, target, allowForward, arriveDistance, timeoutSeconds)
+// 进入 arriveDistance → success；超时未抵达 → failure
+public static IEnumerator MoveTo(self, target, allowForward, arriveDistance, durationSeconds)
 ```
 
 ### 4.4 瞬时命令：图内 void / C# bool
@@ -90,7 +108,7 @@ public static IEnumerator MoveTo(self, target, allowForward, arriveDistance, tim
 
 | 模块 | 同步 | 异步（说明书路径） | 不要做的 |
 |---|---|---|---|
-| NonPlayerUnitApi | `HasRadarContact` / `CanSeePlayer` / `KnowsPlayer` / `IsFartherThan` / `MoveToward` / `ApproachIfFarther` | 本舰 `RadarContactChanged`、`PlayerVisibleChanged`；过程用带 `durationSeconds` 的 `MoveTo`、`ChaseKnownPlayer`、持续 `MoveToward` 等 | 不要 `WaitUntilRadarContact`；不要用不限时协程；不要用 `MoveTo` 追移动中的玩家；不要用 `0` 表示省略运动期望 |
+| NonPlayerUnitApi | `HasRadarContact` / `CanSeePlayer` / `KnowsPlayer` / `IsFartherThan` / `IsMoving` / `HasPatrolRoute` / `GetCurrentPatrolWaypoint` / `GetNearestPatrolIndex` / `MoveToward` / `ApproachIfFarther` | 本舰 `RadarContactChanged`、`PlayerVisibleChanged`；过程用带 `durationSeconds` 的 `MoveTo`、`ChaseKnownPlayer`、持续 `MoveToward` 等 | 不要 `WaitUntilRadarContact`；不要 `Wait` 轮询 `CanSeePlayer`；不要用不限时协程；不要用 `MoveTo` 追移动中的玩家；不要用 `0` 表示省略运动期望；不要在 C# 内置完整巡逻循环（图内开始/恢复用 `SetPatrolToNearest`，行走用 `AdvancePatrol`） |
 | CombatApi | `IsCannonReady` / `IsGrappleOperating` / `GetRadarContactCount` | 暂无独立边沿；需要再按需接线，不要先造 WaitUntil | |
 | FlowApi | `GetGameState` / `WaitingForSettlementConfirm` | `OnGameStateChanged` / `OnSettlementPending` | 不要 WaitUntilGameState |
 | MissionApi | `GetMissionState` / `IsCompleted` | `OnMissionStateChanged` / `OnMissionEnded` | |

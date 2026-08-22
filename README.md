@@ -1,5 +1,7 @@
 # Spaceship 项目文档库
 
+> 从 Unity 工程进入文档时，可先读 [Docs/README.md](../README.md)（阅读引导与角色路径）。
+
 本仓库是 **Spaceship** 项目的独立文档库，与游戏工程代码库（`d:\Unity\Spaceship`）分离管理，专注于设计文档的沉淀、迭代与归档。
 
 ---

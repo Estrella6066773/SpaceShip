@@ -1,8 +1,8 @@
-# 通用游戏 API 框架与 SequenceMap 接入规划
+# API 框架与 SequenceMap 接入规划
 
 > 作者：AI 规划 | 创建日期：2026-08-14 | 状态：规划落地中
 
-本文档定义 SpaceShip 的通用游戏能力 API 框架：**核心能力层**（不依赖任何具体工具）+ **SequenceMap 适配层**（扁平签名接入流程图）。API 框架服务所有消费者（SequenceMap / 游戏系统 / UI / 测试 / 编辑器工具），并规划各系统逐步演进为「行为可经 API 完成」。
+本文档定义 SpaceShip 的 API 框架：**核心能力层**（不依赖任何具体工具）+ **SequenceMap 适配层**（扁平签名接入流程图）。API 服务所有消费者（SequenceMap / 游戏系统 / UI / 测试 / 编辑器工具），并规划各系统逐步演进为「行为可经 API 完成」。
 
 ---
 
@@ -11,7 +11,7 @@
 游戏核心玩法已具备稳定的领域服务（商店 / 仓库 / 车间 / 任务 / 存档），当前缺少「可编程化」接入：
 策划与 QA 无法用流程图编排玩法流程、查询状态或等待事件，其他系统也无法复用统一的能力入口。
 
-目标：**制作最通用的游戏能力 API 框架**——
+目标：**制作 API 框架**——
 
 1. **通用性**：核心能力层是纯 C# 静态门面，签名类型化（真枚举、领域对象），不绑定 SequenceMap，任何消费者直接调用；
 2. **可编程化**：通过 SequenceMap 适配层把能力暴露为流程图可发现的 API（扁平签名 + 中文元数据）；
@@ -44,7 +44,9 @@ SequenceMap 通过以下机制消费游戏能力；其中**静态方法 API 由�
 - 枚举映射为 `string` / `int`；`Vector2` 映射为 `Vector3`
 - 线程安全一律标 `UnityObject`（游戏状态都在主线程）
 - 返回 `IEnumerator` 的方法自动成为异步动作节点
-- 异步协程内只允许 `yield return null`（或框架可感知的 CustomYieldInstruction），禁止 `WaitForSeconds`
+- 异步协程内只允许 `yield return null` / `yield return true/false`（末帧 bool 表示成功/未完成），禁止 `WaitForSeconds`
+- 有完成条件的协程（如 `MoveTo`）：目标达成 → success；超时未达成 → failure（末帧 `yield return false`）
+- 纯时长协程（如持续 `MoveToward`）：做满 `durationSeconds` → success
 - 图内可能「正常失败」的命令（冷却、未命中）适配层宜返回 `void`，避免 bool false 无失败边时停图
 
 > 核心能力层**不受此约束**：它使用类型化签名（真枚举如 `CargoCategory` / `ModuleKind` / `MissionState`），扁平化翻译发生在适配层（`ApiEnum` 负责字符串 → 枚举解析）。
@@ -386,6 +388,25 @@ public sealed class GraphControlService : MonoBehaviour
 
 > P1 各适配层（`SequenceMapCombatApi` / `SequenceMapNavigationApi` / `SequenceMapResourcesApi` / `SequenceMapWorldApi`）按「适配层签名约束」将枚举参数（如货物类别）扁平化为字符串并经 `ApiEnum` 解析后转发核心层。
 
+### 5.12 NonPlayerUnitApi —— 非玩家单位（SequenceMap 行为树）
+
+> 非玩家单位 AI 由 SequenceMap 图驱动；核心层 `NonPlayerUnitApi` + 适配层 `SequenceMapNonPlayerUnitApi`（分类 **「游戏/非玩家单位」**）提供感知、寻路、移动、开火等**可拼装原语**，不在 C# 内写完整 AI。
+
+**策划文档（改图必读）**：[非玩家单位 SequenceMap API 使用指南](./非玩家单位%20SequenceMap%20API%20使用指南.md) — 完整节点速查、三态/射击/逃跑拼装、参数调优与排障。
+
+**程序文档**：[非玩家单位行为树](./非玩家单位行为树.md) — 三层架构、Runner 装配、`NonPlayerUnitBehaviorConfig`、QA 用例。
+
+要点：`self` 图变量绑本舰根；同步查询 / `OnCustomEvent` / 协程（必填 `durationSeconds`）三路径；看见玩家必须 `OnCustomEvent == "PlayerVisibleChanged"`（先查 `CanSeePlayer`），不要 `Wait` 轮询；轮询 `MoveToward` 可用 `IsMoving` 防重复下指令，`MoveTo` 不必查；`FireCannon` 在 SM 为 void；追移动目标用 `ChaseKnownPlayer` 或循环 `ApproachIfFarther`，勿对玩家单次 `MoveTo`。`MoveToward` / `MoveTo` 为全向平移（朝向与去路独立）。固定巡逻：`PatrolWaypoint` 列表 + 图内增删改查 API + 开始/恢复时 `SetPatrolToNearest` + `AdvancePatrol`（**默认闭合循环**）；勿在 C# 写完整巡逻 AI。
+
+**协程完成语义**（与 [`API同步与异步规范.md`](../规范与标准/API同步与异步规范.md) §4.3 一致）：
+
+| 类型 | 达成目标 | 超时未达成 |
+|---|---|---|
+| 有完成条件（`MoveTo`、`ApproachIfFarther` 持续、`ChaseKnownPlayer`） | success | **failure**（图须接失败边） |
+| 纯时长（持续 `MoveToward` / `RotateToward` / `FireCannon`） | — | success |
+
+`MoveTo` 等：进入 `arriveDistance` / `keepDistance`（平面距离）即 success；朝向与速度期望不影响抵达判定。
+
 ---
 
 ## 6. 事件桥映射（GameEventBridge）
@@ -426,7 +447,7 @@ public sealed class GraphControlService : MonoBehaviour
 5. **第五步**：刷新 SequenceMap API 面板，验证适配层 API 全部可发现、可拖入图、可生成
 6. **第六步**：建流程图样例（出航主循环 / 任务推进），生成代码，PlayMode 测试
 7. **第七步（已交付）**：P1 API 覆盖 `CombatApi`（开火/护盾/钩爪/雷达）+ `NavigationApi`（速度/转向/手动指令）+ `ResourcesApi`（燃料/食物/弹药/航程）+ `WorldApi`（小行星/残骸/非玩家单位/结算/天数），`GameApiBootstrap` 注册世界系统服务；后续游戏系统间命令/查询、UI 与自动化测试逐步改走核心能力层，向「行为可经 API 完成」演进
-8. **第八步（已交付）**：QA 验证闭环——分模块验收文档（`通用游戏 API QA 测试流程.md`）定义「前置条件 → 场景内路径 A（SequenceMap 图内调用）+ 路径 B（C# 直接调用）→ 事件桥 / 反向桥 → 验收清单」的逐步验证流程；运行时侧提供 `QAApiVerifier`（`Scripts/Api/Tools/`，挂场景空物体后 Inspector 右键「验证-全部」等菜单项，直接调用核心能力层并输出 `[QA]` 前缀的 PASS / FAIL / SKIP 日志），破坏性用例默认关闭
+8. **第八步（已交付）**：QA 验证闭环——分模块验收文档（`API QA 测试流程.md`）定义「前置条件 → 场景内路径 A（SequenceMap 图内调用）+ 路径 B（C# 直接调用）→ 事件桥 / 反向桥 → 验收清单」的逐步验证流程；运行时侧提供 `QAApiVerifier`（`Scripts/Api/Tools/`，挂场景空物体后 Inspector 右键「验证-全部」等菜单项，直接调用核心能力层并输出 `[QA]` 前缀的 PASS / FAIL / SKIP 日志），破坏性用例默认关闭
 
 ---
 
